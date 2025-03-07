@@ -1,12 +1,8 @@
 #!/bin/bash
-#
-# This is an example from the Gromacs tutorial
-# by Dr. Justin A. Lemku from Virginia Tech Department of Biochemistry
-# http://www.mdtutorials.com/gmx/lysozyme/
-#
 
-GMX=/usr/local/gromacs/avx2_256/bin/gmx
+# A Gromacs Tutorial from
+# http://www.mdtutorials.com/gmx/lysozyme/01_pdb2gmx.html
+# by Prof. Justin A. Lemkul
 
-echo 15 | $GMX pdb2gmx -f 1AKI_clean.pdb -o 1AKI_processed.gro -water spce
-
-ls /opt/artifact/
+grep -v HOH 1aki.pdb > 1AKI_clean.pdb
+echo 15 | gmx pdb2gmx -f 1AKI_clean.pdb -o 1AKI_processed.gro -water spce
