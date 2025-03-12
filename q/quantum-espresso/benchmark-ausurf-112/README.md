@@ -1,6 +1,8 @@
 # AUSURF112, Gold surface (112 atoms) DEISA pw benchmark.
 
-!!! 8GB GPU memory is not enough
+## Tested 
+- [x] Nvidia RTX 3060Ti 8GB, failed because lack of memory
+- [ ] Sakura Internet DOK V100
 
 
 ## References
