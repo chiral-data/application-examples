@@ -5,6 +5,11 @@
 
 echo "post processing"
 rm *.pdb
-rm 1AKI_processed.gro
-rm posre.itp
-rm topol.top
+rm *.gro
+rm *.itp
+rm *.top
+rm *.edr
+rm *.log
+rm *.tpr
+rm *.trr
+rm *.xvg
