@@ -12,7 +12,8 @@ outputs = [
 #    "prot_no_msa_model_diffusion_samples-1.cif"
 ]
 scripts = [
-    "job.sh"
+  # "job.sh"
+  "curl -O https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/job.sh | bash"
 ]
 
 [dok]
