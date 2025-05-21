@@ -1,15 +1,7 @@
 [files]
 inputs = [
-    "prot_no_msa.yaml"
 ]
 outputs = [
-    "prot_no_msa_model_0.cif",
-    "confidence_prot_no_msa_model_0.json",
-#    "pae_prot_no_msa_model_0.npz",
-#    "pde_prot_no_msa_model_0.npz",
-    "plddt_prot_no_msa_model_0.npz",
-    "prot_no_msa.npz",
-#    "prot_no_msa_model_diffusion_samples-1.cif"
 ]
 scripts = [
   # "job.sh"
