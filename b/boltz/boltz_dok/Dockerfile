@@ -38,5 +38,5 @@ WORKDIR /workspace
 # COPY examples/ /workspace/examples/
 
 # Set the entrypoint to boltz with default command
-ENTRYPOINT ["boltz"]
-CMD ["--help"]
+# ENTRYPOINT ["boltz"]
+# CMD ["--help"]

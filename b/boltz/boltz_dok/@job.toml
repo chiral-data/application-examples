@@ -13,11 +13,11 @@ outputs = [
 ]
 scripts = [
   # "job.sh"
-  "curl -O https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/job.sh | bash"
+  # "curl -O https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/job.sh | bash"
 ]
 
 [dok]
-docker_image = "chiral.sakuracr.jp/boltz1:latest"
+docker_image = "chiral.sakuracr.jp/boltz1_rebuild:latest"
 
 # http_port = 11434
 # DOK plan options
