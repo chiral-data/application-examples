@@ -1,17 +1,19 @@
 [files]
 inputs = [
+  "job.sh"
 ]
 outputs = [
 ]
 scripts = [
-  # "job.sh"
-  # "curl -O https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/job.sh | bash"
 ]
 
 [dok]
 docker_image = "chiral.sakuracr.jp/boltz1_rebuild:latest"
+commands = [
+  "run.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/job.sh",
+]
 
-# http_port = 11434
 # DOK plan options
-plan = "v100-32gb"
-# plan = "h100-80gb"
+# plan = "v100-32gb"
+plan = "h100-80gb"
