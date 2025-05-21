@@ -2,9 +2,12 @@
 
 This is a collections of applications examples which can be used in chiral products
 
+| Name                  | Sakura DOK            |
+| ---                   | ---                   |
+| Boltz1                | :heavy_check_mark:    |
+| Gromacs               | :construction:        |
+| myPresto              | :construction:        |
+| Ollama                | :heavy_check_mark:    |
+| Quantum Expresso      | :construction:        |
+| Whisper               | :construction:        |
 
-- Gromacs
-- myPresto
-- Ollama
-- Quantum Expresso
-- Whisper 
