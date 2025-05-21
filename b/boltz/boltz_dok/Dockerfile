@@ -37,6 +37,7 @@ WORKDIR /workspace
 # Copy example input files (if needed)
 # COPY examples/ /workspace/examples/
 
-# Set the entrypoint to boltz with default command
-# ENTRYPOINT ["boltz"]
-# CMD ["--help"]
+# Copy the launching script run.sh 
+COPY run.sh /workspace/run.sh
+
+ENTRYPOINT ["/bin/sh"]
