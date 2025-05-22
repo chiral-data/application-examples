@@ -19,4 +19,5 @@ sh job.sh
 echo "Copy the output files into the DOK artifact"
 mkdir -p /opt/artifact/gromacs_result
 cp ./potential.xvg /opt/artifact/gromacs_result/
+cp ./*.trr /opt/artifact/
 ls /opt/artifact/gromacs_result/
