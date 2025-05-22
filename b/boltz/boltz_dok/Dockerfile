@@ -37,7 +37,7 @@ WORKDIR /workspace
 # Copy example input files (if needed)
 # COPY examples/ /workspace/examples/
 
-# Copy the launching script run.sh 
+# Copy the launching script run.sh from the project folder @common
 COPY run.sh /workspace/run.sh
 
 ENTRYPOINT ["/bin/sh"]
