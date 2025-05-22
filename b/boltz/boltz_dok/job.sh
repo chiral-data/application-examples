@@ -8,13 +8,10 @@
 
 echo "Downloading prot_no_msa.yaml ..."
 wget https://raw.githubusercontent.com/jwohlwend/boltz/refs/heads/main/examples/prot_no_msa.yaml
-ls -lh
 
 # Run 
 echo "Run boltz calculation ..."
 python3 -m boltz.main predict prot_no_msa.yaml
-
-ls -lh
 
 # Create results directory
 mkdir -p /opt/artifact/boltz_results_prot_no_msa
