@@ -39,6 +39,7 @@ echo 24 0 | $GMX energy -f npt.edr -o density.xvg
 
 # Step Eight: Production MD
 $GMX grompp -f md.mdp -c npt.gro -t npt.cpt -p topol.top -o md_0_1.tpr
+# check what have been produced
 ls -lh
 $GMX mdrun -deffnm md_0_1
 
