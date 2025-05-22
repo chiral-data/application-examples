@@ -7,8 +7,7 @@
 # pip install boltz -U
 
 echo "Downloading prot_no_msa.yaml ..."
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3_boltz/b/boltz/boltz_dok/prot_no_msa.yaml
-
+wget https://raw.githubusercontent.com/jwohlwend/boltz/refs/heads/main/examples/prot_no_msa.yaml
 ls -lh
 
 # Run 
