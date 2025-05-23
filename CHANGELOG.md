@@ -7,6 +7,7 @@ All notable changes will be documented in this file.
 - run [Boltz1](https://github.com/jwohlwend/boltz) with Sakura DOK
 
 ### Fixed
+- run Gromacs with Sakura DOK
 
 
 ### Other
