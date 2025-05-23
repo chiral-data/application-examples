@@ -12,9 +12,9 @@ cp ../sample/4HP0.pdb .
 # create the input file for "pdbcheck"
 echo 4HP0.pdb > inp_pdbcheck
 echo 4HP0_1.pdb >> inp_pdbcheck
-echo "–alt" >> inp_pdbcheck
-echo "–ss" >> inp_pdbcheck
-echo "–disableHet" >> inp_pdbcheck
+echo -alt >> inp_pdbcheck
+echo -ss >> inp_pdbcheck
+echo -disableHet >> inp_pdbcheck
 # run "pdbcheck"
 ../bin/pdbcheck < inp_pdbcheck
 
