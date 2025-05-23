@@ -1,7 +1,7 @@
 FROM chiral.sakuracr.jp/mypresto_sievgene:latest
 
 # Install system dependencies and "wget"
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y build-essential ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && apt-get clean \
