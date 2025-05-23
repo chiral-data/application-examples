@@ -7,11 +7,11 @@ scripts = [
 ]
 
 [dok]
-docker_image = "chiral.sakuracr.jp/mypresto_sievgene:latest"
+docker_image = "chiral.sakuracr.jp/mypresto_sievgene_dok:latest"
 
 commands = [
   "run.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/m/myPresto/sievgene/job_4hp0.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/m/myPresto/sievgene/run_dok.sh",
 ]
 
 # DOK plan options
