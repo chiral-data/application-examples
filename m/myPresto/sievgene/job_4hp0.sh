@@ -18,7 +18,7 @@ echo -disableHet >> inp_pdbcheck
 # run "pdbcheck"
 ../bin/pdbcheck < inp_pdbcheck
 
-# create the input file for "tplgene" 
+# create the input file for "tplgeneX" 
 echo 1 > inp_tplgeneX
 echo FF_set1 >> inp_tplgeneX
 echo 4HP0_1.pdb >> inp_tplgeneX
@@ -33,6 +33,13 @@ grep "^HETATM" 4HP0.pdb | grep -v "HOH" > point.pdb
 
 # copy the ligand file
 cp ../sample/c001-1.mol2 ./ligand.mol2
+
+# create the input file for "tplgeneL" 
+echo 2 > inp_tplgeneL
+echo ligand >> inp_tplgeneL
+echo 3 >> inp_tplgeneL
+# run "tplgeneL"
+../bin/exec_tplgeneL.sh < inp_tplgeneL
 
 # prepare the input file and run "sievgene"
 cp ../input/inp_sievgene1 .
