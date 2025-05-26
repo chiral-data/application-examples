@@ -38,6 +38,8 @@ cp ../sample/c001-1.mol2 ./ligand.mol2
 echo 2 > inp_tplgeneL
 echo ligand >> inp_tplgeneL
 echo 3 >> inp_tplgeneL
+echo gaff21.db >> inp_tplgeneL
+echo no >> inp_tplgeneL
 # run "tplgeneL"
 ../bin/exec_tplgeneL.sh < inp_tplgeneL
 
