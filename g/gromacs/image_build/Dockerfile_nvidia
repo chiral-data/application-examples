@@ -12,6 +12,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /workspace
 
 # Copy the launching script run.sh from the project folder @common
-COPY run.sh /workspace/run.sh
+COPY run_dok.sh /workspace/run_dok.sh
 
 ENTRYPOINT ["/bin/sh"]

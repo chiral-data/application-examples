@@ -11,6 +11,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /opt/mypresto/sievgene_pack_FreeBSD_240118
 
 # Copy the launching script run.sh from the project folder @common
-COPY run.sh ./run.sh 
-
+COPY run_dok.sh ./run_dok.sh 
 ENTRYPOINT ["/bin/sh"]
