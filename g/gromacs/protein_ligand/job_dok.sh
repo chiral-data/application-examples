@@ -16,7 +16,6 @@ echo ""
 cd /workspace
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/g/gromacs/protein_ligand/job.sh
 echo "Running the job ..."
-conda activate 
 sh job.sh
 
 echo "Copy the output files into the DOK artifact"
