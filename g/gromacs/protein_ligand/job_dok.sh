@@ -13,6 +13,7 @@ wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs
 wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs-py/g/gromacs/protein_ligand/data/workflow.yml
 echo ""
 
+cd /workspace
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/g/gromacs/protein_ligand/job.sh
 echo "Running the job ..."
 sh job.sh
