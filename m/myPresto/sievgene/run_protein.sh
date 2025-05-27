@@ -2,7 +2,7 @@
 #
 #
 
-$PROTEIN=4HP0
+PROTEIN="4HP0"
 
 echo "Downloading input files ..."
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/m/myPresto/sievgene/job_$PROTEIN.sh
