@@ -10,6 +10,7 @@ scripts = [
 docker_image = "chiral.sakuracr.jp/gromacs_dok_biobb:latest"
 commands = [
   "run_dok.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/g/gromacs/protein_ligand/job_dok.sh",
 ]
 
 # DOK plan options
