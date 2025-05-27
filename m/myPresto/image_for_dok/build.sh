@@ -1,6 +1,6 @@
 #!/bin/bash
 #
 
-cp ../../../@common/run.sh ./
+cp ../../../@common/run_dok.sh ./
 docker build -t mypresto_sievgene_dok .
-rm run.sh
+rm run_dok.sh

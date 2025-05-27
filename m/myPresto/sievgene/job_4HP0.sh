@@ -2,10 +2,6 @@
 #
 #
 
-mkdir tmp_4HP0 
-cd tmp_4HP0 
-cp ../sample/4HP0.pdb . 
-
 # check the pdb file
 ../bin/get_pdb_info.pl 4HP0.pdb
 
