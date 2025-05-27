@@ -1,0 +1,17 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+[dok]
+docker_image = "chiral.sakuracr.jp/gromacs_dok_biobb:latest"
+commands = [
+  "run_dok.sh",
+]
+
+# DOK plan options
+plan = "v100-32gb"
+# plan = "h100-80gb"

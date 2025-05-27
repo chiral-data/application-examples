@@ -16,7 +16,7 @@ fi
 echo "Building container image with base image from $1"
 echo ""
 
-mkdir -p $1 & cd$_
+mkdir -p $1 && cd $1
 cp ../../../../@common/run_dok.sh ./
 cp ../Dockerfile_$1 ./Dockerfile
 docker build -t gromacs_dok_$1 .

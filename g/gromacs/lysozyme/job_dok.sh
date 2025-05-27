@@ -2,7 +2,6 @@
 #
 #
 
-
 echo "Downloading input files ..."
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3/g/gromacs/lysozyme/job.sh
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3/g/gromacs/lysozyme/ions.mdp
