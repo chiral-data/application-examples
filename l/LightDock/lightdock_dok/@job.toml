@@ -7,7 +7,7 @@ scripts = [
 ]
 
 [dok]
-docker_image = "chiral.sakuracr.jp/lightdock:latest"
+docker_image = "chiral.sakuracr.jp/lightdock_dok_python:latest"
 commands = [
   "run_dok.sh",
   "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-LightDock-docker/l/LightDock/lightdock_dok/job.sh",
