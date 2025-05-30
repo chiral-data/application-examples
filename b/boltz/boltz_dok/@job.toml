@@ -10,8 +10,8 @@ scripts = [
 [dok]
 docker_image = "chiral.sakuracr.jp/boltz1_rebuild:latest"
 commands = [
-  "run.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3/b/boltz/boltz_dok/job.sh",
+  "run_dok.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/job.sh",
 ]
 
 # DOK plan options

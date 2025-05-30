@@ -9,7 +9,7 @@ cd tmp_$PROTEIN
 cp ../sample/$PROTEIN.pdb . 
 
 echo "Downloading the launching script ..."
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/m/myPresto/sievgene/job_$PROTEIN.sh
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/m/myPresto/sievgene/job_$PROTEIN.sh
 echo "Running the sievgene job for $PROTEIN..."
 sh job_$PROTEIN.sh
 echo ""

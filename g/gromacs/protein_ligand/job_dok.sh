@@ -10,11 +10,11 @@ wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs
 wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs-py/g/gromacs/protein_ligand/data/ligand.gro
 wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs-py/g/gromacs/protein_ligand/data/ligand.itp
 wget https://github.com/chiral-data/application-examples/blob/v0.2.3-add-gromacs-py/g/gromacs/protein_ligand/data/structure.pdb
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/g/gromacs/protein_ligand/workflow.yml
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/g/gromacs/protein_ligand/workflow.yml
 echo ""
 
 cd /workspace
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3-add-myPresto/g/gromacs/protein_ligand/job.sh
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/g/gromacs/protein_ligand/job.sh
 echo "Running the job ..."
 sh job.sh
 

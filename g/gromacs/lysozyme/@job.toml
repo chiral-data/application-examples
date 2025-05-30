@@ -9,8 +9,8 @@ scripts = [
 [dok]
 docker_image = "chiral.sakuracr.jp/gromacs_2023_2_rebuild:latest"
 commands = [
-  "run.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.3/g/gromacs/lysozyme/job_dok.sh",
+  "run_dok.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/g/gromacs/lysozyme/job_dok.sh",
 ]
 
 # DOK plan options
