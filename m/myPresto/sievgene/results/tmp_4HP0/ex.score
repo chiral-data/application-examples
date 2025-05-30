@@ -1,0 +1,40 @@
+ INFORMATION> BEFORE MINIMIZE RANKING :EXPERIMENT ID=1         
+ INFORMATION> LOCAL SCORE RANKING           5
+ 
+ 
+     SCORE(/100)  dG    LE/10  NHA rotNum    ASA     ELE     HYD     VDW   SURFACE   RMSD
+    1   -1.8852  -5.18   -1.35  14   0    -170.94    1.06  -18.64    0.00    0.00   24.95
+    2   -1.8643  -5.09   -1.33  14   0    -170.28    0.17  -16.31    0.00    0.00   25.30
+    3   -1.8406  -4.95   -1.31  14   0    -170.61   -2.13  -11.32    0.00    0.00   25.95
+    4   -1.8387  -5.06   -1.31  14   0    -163.35   -1.37  -19.15    0.00    0.00   25.57
+    5   -1.8384  -5.06   -1.31  14   0    -166.40    1.37  -18.80    0.00    0.00   25.11
+  
+ REFERENCE COORDINATE DATA
+    999.90  999.90    0.00    0.00
+  
+ INFORMATION> AFTER MINIMIZE RANKING :EXPERIMENT ID=1         
+ INFORMATION> LOCAL SCORE RANKING           5
+ 
+   COMPOUND NAME : HTS1404-00000229-01
+   FILE NAME     : ligand.mol2
+ 
+     SCORE(/100)  dG    LE/10  NHA rotNum    ASA     ELE     HYD     VDW   SURFACE   RMSD
+@   1   -1.9828   -5.4170   -1.4163  14   0    -181.52    2.37  -18.62   -0.51   69.64   24.96
+@   2   -1.9758   -5.3988   -1.4113  14   0    -180.83    2.34  -18.59   -0.49   69.54   24.96
+@   3   -1.9641   -5.3693   -1.4029  14   0    -179.67    2.30  -18.58   -0.45   69.49   24.97
+@   4   -1.9506   -5.3359   -1.3933  14   0    -178.35    2.26  -18.58   -0.39   69.36   24.98
+@   5   -1.9322   -5.3119   -1.3802  14   0    -176.68    3.24  -19.65   -0.13   71.94   24.76
+  
+ REFERENCE COORDINATE DATA
+    999.90  999.90    0.00    0.00
+  
+ INFORMATION> COMPOUND RANKING           1
+ 
+       COMPOUND NAME                           SCORE(/100)  dG     LE(/10)     NHA
+@@     1 HTS1404-00000229-01                         -1.9828   -5.4170   -1.4163         14
+  
+ INFORMATION> LIGAND EFFICIENCY RANKING
+ 
+       COMPOUND NAME                                 LE(/10)
+@LE     1 HTS1404-00000229-01                         -1.4163
+ 

@@ -6,4 +6,6 @@ scripts = []
 [dok]
 docker_image = "chiral.sakuracr.jp/llm_ollama_dok_build:latest"
 http_port = 11434
-# plan = "v100-32gb"
+# DOK plan options
+plan = "v100-32gb"
+# plan = "h100-80gb"
