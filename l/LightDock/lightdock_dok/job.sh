@@ -4,8 +4,11 @@
 # Otherwise there will be backward compatibility issues, such as
 #   - since scipy 1.14: keyword argument 'turbo' removed from linalg.eigh() 
 #   - since numpy 1.25: numpy.alltrue is deprecated
+# 
+# From example: https://lightdock.org/tutorials/0.9.3/simple_docking
 
-echo "Downloading receptor and ligand protein examples..."A
+
+echo "Downloading receptor and ligand protein examples..."
 wget https://raw.githubusercontent.com/lightdock/lightdock.github.io/master/tutorials/0.9.3/simple_docking/data/2UUY_rec.pdb
 wget https://raw.githubusercontent.com/lightdock/lightdock.github.io/master/tutorials/0.9.3/simple_docking/data/2UUY_lig.pdb
 
