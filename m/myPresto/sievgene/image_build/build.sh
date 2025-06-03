@@ -2,5 +2,9 @@
 #
 
 cp ${MYPRESTO_SRC}/sievgene_pack_240118.tar.gz ./
-sudo docker build -t mypresto_sievgene .
+cp ../../../@common/run_dok.sh ./
+
+docker build -t mypresto_sievgene_dok .
 rm sievgene_pack_240118.tar.gz
+rm run_dok.sh
+
