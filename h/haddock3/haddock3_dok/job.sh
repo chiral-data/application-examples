@@ -8,6 +8,7 @@ wget wget https://surfdrive.surf.nl/files/index.php/s/MuC8YogNPj9Ac31/download -
 unzip HADDOCK3-antibody-antigen.zip
 cd HADDOCK3-antibody-antigen/runs
 rm -rf */
+mkdir run1
 cd ..
 
 # Install PyMol
@@ -23,8 +24,9 @@ echo "Preparing the antigen structure..."
 pdb_fetch 4I1B | pdb_tidy -strict | pdb_delhetatm | pdb_selaltloc | pdb_keepcoord | pdb_chain -B | pdb_chainxseg | pdb_tidy -strict > 4I1B_clean.pdb
 
 echo "Running HADDOCK3..."
+# Change the number of cores
 sed -i 's/ncores = 50/ncores = 3/g' workflows/docking-antibody-antigen.cfg
-haddock3 workflows/docking-antibody-antigen.cfg > haddock3.log &
+haddock3 workflows/docking-antibody-antigen.cfg 
 
 # Create results directory
 mkdir -p /opt/artifact/haddock3_results
