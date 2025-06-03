@@ -11,7 +11,7 @@ rm -r runs
 
 # Install PyMol
 echo "Installing PyMol..."
-pip install pymol
+pip install pymol-open-source
 
 echo "Preparing the antibody structure..."
 pdb_fetch 4G6K | pdb_tidy -strict | pdb_selchain -H | pdb_delhetatm | pdb_fixinsert | pdb_selaltloc | pdb_keepcoord | pdb_selres -1:120 | pdb_tidy -strict > 4G6K_H.pdb
@@ -21,10 +21,7 @@ pdb_merge 4G6K_H.pdb 4G6K_L.pdb | pdb_reres -1 | pdb_chain -A | pdb_chainxseg | 
 echo "Preparing the antigen structure..."
 pdb_fetch 4I1B | pdb_tidy -strict | pdb_delhetatm | pdb_selaltloc | pdb_keepcoord | pdb_chain -B | pdb_chainxseg | pdb_tidy -strict > 4I1B_clean.pdb
 
-# compute mode
-mode = "local"
-#  1 nodes x 50 ncores
-ncores = 3
+echo "Running HADDOCK3..."
 haddock3 workflows/docking-antibody-antigen.cfg > haddock3.log &
 
 # Create results directory
