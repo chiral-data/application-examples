@@ -6,14 +6,16 @@
 # paper: https://pubs.acs.org/doi/10.1021/acs.jcim.2c00044
 
 BENCHMARK_INPUTS="
-3925268,cmet_eq
-3925290,hif2a_eq
+https://www.mpinat.mpg.de/3925268/cmet_eq.zip
+https://www.mpinat.mpg.de/3925290/hif2a_eq.zip
+https://www.mpinat.mpg.de/3925312/ligand_cmet_eq.zip
+https://www.mpinat.mpg.de/3925334/shp2_eq.zip
 "
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 
 for tuple_string in ${BENCHMARK_INPUTS}; do
-    prefix=$(echo $tuple_string | cut -d ',' -f 1)
-    benchmark=$(echo $tuple_string | cut -d ',' -f 2)
+    prefix=$(echo $tuple_string | cut -d '/' -f 4)
+    benchmark=$(echo $tuple_string | cut -d '/' -f 5 | cut -d '.' -f 1)
 
     echo "Downloading input files for benchmark $benchmark ..."
     curl -O https://www.mpinat.mpg.de/$prefix/$benchmark.zip 
@@ -23,7 +25,11 @@ for tuple_string in ${BENCHMARK_INPUTS}; do
     # $GMX mdrun -s $benchmark.tpr -nsteps 10000 -ntomp 2
     $GMX mdrun -s $benchmark.tpr -nsteps 1000 
     echo "Benchmark $benchmark done ..."
+    echo ""
 done
+
+# Benchmarks of "Binding affinity study benchmarks"
+#
 
 # Benchmark results on Sakura Internet, DOK & Server
 #                                 steps       ns/day    core t(s)   wall t(s)
