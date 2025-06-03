@@ -23,6 +23,7 @@ echo "Preparing the antigen structure..."
 pdb_fetch 4I1B | pdb_tidy -strict | pdb_delhetatm | pdb_selaltloc | pdb_keepcoord | pdb_chain -B | pdb_chainxseg | pdb_tidy -strict > 4I1B_clean.pdb
 
 echo "Running HADDOCK3..."
+sed -i 's/ncores = 50/ncores = 3/g' workflows/docking-antibody-antigen.cfg
 haddock3 workflows/docking-antibody-antigen.cfg > haddock3.log &
 
 # Create results directory
