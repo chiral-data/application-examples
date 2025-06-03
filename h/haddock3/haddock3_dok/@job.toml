@@ -10,7 +10,7 @@ scripts = [
 docker_image = "chiral.sakuracr.jp/haddock3_dok_python:latest"
 commands = [
   "run_dok.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-haddock3/h/haddock3/haddock3_dok/job.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/h/haddock3/haddock3_dok/job.sh",
 ]
 
 # DOK plan options
