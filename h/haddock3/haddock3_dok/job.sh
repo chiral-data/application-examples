@@ -25,7 +25,7 @@ pdb_fetch 4I1B | pdb_tidy -strict | pdb_delhetatm | pdb_selaltloc | pdb_keepcoor
 
 echo "Running HADDOCK3..."
 # Change the number of cores
-sed -i 's/ncores = 50/ncores = 3/g' workflows/docking-antibody-antigen.cfg
+sed -i 's/ncores = 50/ncores = 2/g' workflows/docking-antibody-antigen.cfg
 haddock3 workflows/docking-antibody-antigen.cfg 
 
 # Create results directory
