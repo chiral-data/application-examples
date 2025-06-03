@@ -6,13 +6,13 @@
 mkdir work_MD_4lxz
 cd work_MD_4lxz
 # Cope sample file to the working directory
-cp ../sample/pdb4lxz.ent
+cp ../sample/pdb4lxz.ent .
 # Check the PDB file
-perl ../bin/ get_pdb_info.pl pdb4lxz.ent
+perl ../bin/get_pdb_info.pl pdb4lxz.ent
 
 # 2. Process the PDB file
 # Extract Chains A
-perl ../bi n/select_chain.pl A pdb4lxz.ent > tmp_selectChain
+perl ../bin/select_chain.pl A pdb4lxz.ent > tmp_selectChain
 # Delete HOH
 perl ../bin/del_res.pl HOH tmp_selectChain > tmp_delRes1
 # Delete PG4
@@ -20,10 +20,9 @@ perl ../bin/del_res.pl PG4 tmp_delRes1 > tmp_delRes2
 # Delete SHH
 perl ../bin/del_res.pl SHH tmp_delRes2 > tmp_delRes3
 # Confirm the result
-perl ../bin/ get_pdb_ info.pl tmp_delRes3
-get_pdb_
+perl ../bin/get_pdb_info.pl tmp_delRes3
 # Extract restraint only
-perl ../bin/select_res.pl SHH tmp_selectChain > tmp_ligan d
+perl ../bin/select_res.pl SHH tmp_selectChain > tmp_ligand
 
 # 3. Execute pdbcheck
 # Run with protein
@@ -41,7 +40,7 @@ cat inp_pdbcheck_lig
 ../bin/pdbcheck < inp_pdbcheck_lig
 
 # 4. Execute Hgene
-../bin/Hgene ipdb lig.pdb p mop AM1 BCC omol2 lig.mol2
+../bin/Hgene -ipdb lig.pdb -p -mop AM1BCC -omol2 lig.mol2
 
 # 5. Execute tplgeneL
 echo 2 > inp_tplgeneL
