@@ -4,9 +4,19 @@
 # by Max Planck Institute
 #
 
-GMX=/usr/local/gromacs/avx2_256/bin/gmx
+# Downloand the input files
+PREFIX=3925268
 BENCHMARK=cmet_eq
+# PREFIX=3925290
+# BENCHMARK=hif2a_eq
 
+echo "preprocessing"
+curl -O https://www.mpinat.mpg.de/$PREFIX/$BENCHMARK.zip 
+unzip $BENCHMARK.zip
+
+
+# Run the benchmark
+GMX=/usr/local/gromacs/avx2_256/bin/gmx
 # $GMX mdrun -s $BENCHMARK.tpr -nsteps 10000 -ntomp 2
 $GMX mdrun -s $BENCHMARK.tpr -nsteps 1000 
 
