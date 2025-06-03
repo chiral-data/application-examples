@@ -14,17 +14,15 @@ GMX=/usr/local/gromacs/avx2_256/bin/gmx
 for tuple_string in ${BENCHMARK_INPUTS}; do
     prefix=$(echo $tuple_string | cut -d ',' -f 1)
     benchmark=$(echo $tuple_string | cut -d ',' -f 2)
-    echo $prefix
-    echo $benchmark
 
     echo "Downloading input files for benchmark $benchmark ..."
     curl -O https://www.mpinat.mpg.de/$prefix/$benchmark.zip 
     unzip $benchmark.zip
 
-    echo "Running the benchmark $BENCHMARK ..."
-    # $GMX mdrun -s $BENCHMARK.tpr -nsteps 10000 -ntomp 2
-    $GMX mdrun -s $BENCHMARK.tpr -nsteps 1000 
-    echo "Benchmark $BENCHMARK done ..."
+    echo "Running the benchmark $benchmark ..."
+    # $GMX mdrun -s $benchmark.tpr -nsteps 10000 -ntomp 2
+    $GMX mdrun -s $benchmark.tpr -nsteps 1000 
+    echo "Benchmark $benchmark done ..."
 done
 
 # Benchmark results on Sakura Internet, DOK & Server
