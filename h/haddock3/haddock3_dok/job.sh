@@ -4,16 +4,9 @@
 
 
 echo "Downloading examples..."
-wget wget https://surfdrive.surf.nl/files/index.php/s/MuC8YogNPj9Ac31/download -O HADDOCK3-antibody-antigen.zip
+wget https://surfdrive.surf.nl/files/index.php/s/MuC8YogNPj9Ac31/download -O HADDOCK3-antibody-antigen.zip
 unzip HADDOCK3-antibody-antigen.zip
-cd HADDOCK3-antibody-antigen/runs
-rm -rf */
-mkdir run1
-cd ..
-
-# Install PyMol
-echo "Installing PyMol..."
-#pip install pymol-open-source
+cd HADDOCK3-antibody-antigen
 
 echo "Preparing the antibody structure..."
 pdb_fetch 4G6K | pdb_tidy -strict | pdb_selchain -H | pdb_delhetatm | pdb_fixinsert | pdb_selaltloc | pdb_keepcoord | pdb_selres -1:120 | pdb_tidy -strict > 4G6K_H.pdb
