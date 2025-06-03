@@ -30,6 +30,13 @@ done
 
 # Benchmarks of "Binding affinity study benchmarks"
 #
+# MSI laptop: Intel Core i7 4-core, Nvidia GTX 3060
+#
+# Instance            System              Steps      ns/day
+# MSI laptop          CMET EQ             1000        6.530 
+# MSI laptop          HIF2A EQ            1000        8.990
+# MSI laptop          CMET Ligand EQ      1000       68.806 
+# MSI laptop          SHP2 EQ             1000        4.517
 
 # Benchmark results on Sakura Internet, DOK & Server
 #                                 steps       ns/day    core t(s)   wall t(s)
