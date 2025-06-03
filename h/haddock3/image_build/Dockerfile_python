@@ -1,0 +1,11 @@
+FROM python:3.12
+
+RUN pip install haddock3 
+
+# Create a working directory
+WORKDIR /workspace
+
+# Copy the launching script run.sh from the project folder @common
+COPY run_dok.sh /workspace/run_dok.sh
+
+ENTRYPOINT ["/bin/sh"]
