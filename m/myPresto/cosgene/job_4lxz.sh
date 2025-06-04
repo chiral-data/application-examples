@@ -52,10 +52,10 @@ cat inp_tplgeneL
 ../bin/exec_tplgeneL.sh < inp_tplgeneL
 
 # 6. Execute tplgeneX
-echo pdb > inp_tplgeneX
-echo ../DB/C99.list >> inp_tplgeneX
+echo 1 > inp_tplgeneX
+echo 1 >> inp_tplgeneX
 echo tmp_pdb_checked.pdb >> inp_tplgeneX
-echo pdb >> inp_tplgeneX
+echo 1 >> inp_tplgeneX
 echo Pro_0.pdb >> inp_tplgeneX
 echo Pro_0.tpl >> inp_tplgeneX
 ../bin/exec_tplgeneX.sh < inp_tplgeneX
@@ -91,13 +91,13 @@ cat inp_add_ion
 ../bin/add_ion < inp_add_ion
 
 # 10. Execute tplgeneX again
-echo pdb > inp_tplgeneX2
-echo ../DB/C99.list >> inp_tplgeneX2
+echo 1 > inp_tplgeneX2
+echo 1 >> inp_tplgeneX2
 echo Pro_3.pdb >> inp_tplgeneX2
-echo pdb >> inp_tplgeneX2
+echo 1 >> inp_tplgeneX2
 echo Pro_4.pdb >> inp_tplgeneX2
 echo Pro_4.tpl >> inp_tplgeneX2
-echo tip3p >> inp_tplgeneX2
+echo 1 >> inp_tplgeneX2
 cat inp_tplgeneX2
 ../bin/exec_tplgeneX.sh < inp_tplgeneX2
 head -20 Pro_4.tpl
