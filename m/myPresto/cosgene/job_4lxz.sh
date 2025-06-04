@@ -97,7 +97,7 @@ echo Pro_3.pdb >> inp_tplgeneX2
 echo 1 >> inp_tplgeneX2
 echo Pro_4.pdb >> inp_tplgeneX2
 echo Pro_4.tpl >> inp_tplgeneX2
-echo 1 >> inp_tplgeneX2
+#echo 1 >> inp_tplgeneX2
 cat inp_tplgeneX2
 ../bin/exec_tplgeneX.sh < inp_tplgeneX2
 head -20 Pro_4.tpl
