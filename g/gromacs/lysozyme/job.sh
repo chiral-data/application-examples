@@ -1,8 +1,5 @@
 #!/bin/bash
-
-# A Gromacs Tutorial from
-# http://www.mdtutorials.com/gmx/lysozyme/01_pdb2gmx.html
-# by Prof. Justin A. Lemkul
+#
 
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 
