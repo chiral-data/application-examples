@@ -6,13 +6,13 @@
 mkdir work_MD_4lxz
 cd work_MD_4lxz
 # Cope sample file to the working directory
-cp ../sample/pdb4lxz.ent
+cp ../sample/pdb4lxz.ent .
 # Check the PDB file
-perl ../bin/ get_pdb_info.pl pdb4lxz.ent
+perl ../bin/get_pdb_info.pl pdb4lxz.ent
 
 # 2. Process the PDB file
 # Extract Chains A
-perl ../bi n/select_chain.pl A pdb4lxz.ent > tmp_selectChain
+perl ../bin/select_chain.pl A pdb4lxz.ent > tmp_selectChain
 # Delete HOH
 perl ../bin/del_res.pl HOH tmp_selectChain > tmp_delRes1
 # Delete PG4
@@ -20,10 +20,9 @@ perl ../bin/del_res.pl PG4 tmp_delRes1 > tmp_delRes2
 # Delete SHH
 perl ../bin/del_res.pl SHH tmp_delRes2 > tmp_delRes3
 # Confirm the result
-perl ../bin/ get_pdb_ info.pl tmp_delRes3
-get_pdb_
+perl ../bin/get_pdb_info.pl tmp_delRes3
 # Extract restraint only
-perl ../bin/select_res.pl SHH tmp_selectChain > tmp_ligan d
+perl ../bin/select_res.pl SHH tmp_selectChain > tmp_ligand
 
 # 3. Execute pdbcheck
 # Run with protein
@@ -41,7 +40,7 @@ cat inp_pdbcheck_lig
 ../bin/pdbcheck < inp_pdbcheck_lig
 
 # 4. Execute Hgene
-../bin/Hgene ipdb lig.pdb p mop AM1 BCC omol2 lig.mol2
+../bin/Hgene -ipdb lig.pdb -p -mop AM1BCC -omol2 lig.mol2
 
 # 5. Execute tplgeneL
 echo 2 > inp_tplgeneL
@@ -52,11 +51,11 @@ echo no >> inp_tplgeneL
 cat inp_tplgeneL
 ../bin/exec_tplgeneL.sh < inp_tplgeneL
 
-# 6. Execute tylgeneX
-echo pdb > inp_tplgeneX
-echo C99 >> inp_tplgeneX
+# 6. Execute tplgeneX
+echo 1 > inp_tplgeneX
+echo 1 >> inp_tplgeneX
 echo tmp_pdb_checked.pdb >> inp_tplgeneX
-echo pdb >> inp_tplgeneX
+echo 1 >> inp_tplgeneX
 echo Pro_0.pdb >> inp_tplgeneX
 echo Pro_0.tpl >> inp_tplgeneX
 ../bin/exec_tplgeneX.sh < inp_tplgeneX
@@ -92,13 +91,13 @@ cat inp_add_ion
 ../bin/add_ion < inp_add_ion
 
 # 10. Execute tplgeneX again
-echo pdb > inp_tplgeneX2
-echo C99 >> inp_tplgeneX2
+echo 1 > inp_tplgeneX2
+echo 1 >> inp_tplgeneX2
 echo Pro_3.pdb >> inp_tplgeneX2
-echo pdb >> inp_tplgeneX2
+echo 1 >> inp_tplgeneX2
 echo Pro_4.pdb >> inp_tplgeneX2
 echo Pro_4.tpl >> inp_tplgeneX2
-echo tip3p >> inp_tplgeneX2
+#echo 1 >> inp_tplgeneX2
 cat inp_tplgeneX2
 ../bin/exec_tplgeneX.sh < inp_tplgeneX2
 head -20 Pro_4.tpl
