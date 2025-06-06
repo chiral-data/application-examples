@@ -3,9 +3,6 @@
 # Boltz-1 Democratizing biomolecular interaction modeling
 #
 
-# Install required packages
-# pip install boltz -U
-
 echo "Downloading 4G6K.fasta ..."
 wget https://www.rcsb.org/fasta/entry/4G6K -O 4G6K.fasta
 
