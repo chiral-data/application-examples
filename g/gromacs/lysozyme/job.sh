@@ -3,7 +3,6 @@
 
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 
-wget https://files.rcsb.org/download/1AKI.pdb
 grep -v HOH 1AKI.pdb > 1AKI_clean.pdb
 
 # Step One: Prepare the Topology
