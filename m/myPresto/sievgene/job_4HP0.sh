@@ -42,3 +42,9 @@ echo no >> inp_tplgeneL
 # prepare the input file and run "sievgene"
 cp ../input/inp_sievgene1 .
 ../bin/sievgene_d < inp_sievgene1
+
+# create and download results directory
+mkdir -p /opt/artifact/sievgene_results
+cp -r . /opt/artifact/sievgene_results/
+
+ls /opt/artifact/sievgene_results/

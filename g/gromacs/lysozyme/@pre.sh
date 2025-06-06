@@ -4,3 +4,4 @@
 #
 
 echo "preprocessing"
+wget https://files.rcsb.org/download/1AKI.pdb

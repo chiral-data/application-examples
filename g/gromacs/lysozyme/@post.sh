@@ -4,12 +4,14 @@
 #
 
 echo "post processing"
-rm *.pdb
-rm *.gro
-rm *.itp
-rm *.top
-rm *.edr
-rm *.log
-rm *.tpr
-rm *.trr
-rm *.xvg
+rm -f *.pdb
+rm -f *.gro
+rm -f *.itp
+rm -f *.top
+rm -f *.edr
+rm -f *.log
+rm -f *.tpr
+rm -f *.trr
+rm -f *.xvg
+rm -f *.cpt
+rm -f *.xtc
