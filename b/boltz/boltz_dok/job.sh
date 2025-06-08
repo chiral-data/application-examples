@@ -12,8 +12,8 @@ wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/hea
 
 # Run 
 echo "Run boltz calculation ..."
-python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server
-python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server
+python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server --output_format pdb
+python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server --output_format pdb
 
 # Create results directory
 mkdir -p /opt/artifact/boltz_results_4G6K
