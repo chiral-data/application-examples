@@ -9,8 +9,8 @@
 
 
 echo "Downloading receptor and ligand protein examples..."
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_boltz2lightdock/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_rec_model_0.pdb -O 4G6K_rec.pdb
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_boltz2lightdock/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_lig_model_0.pdb -O 4G6K_lig.pdb
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_rec_model_0.pdb -O 4G6K_rec.pdb
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_lig_model_0.pdb -O 4G6K_lig.pdb
 
 echo "Enable the flags to remove OXT (--noxt) atoms, hydrogens (--noh) and waters (--now), and the ANM support"
 lightdock3_setup.py 4G6K_rec.pdb 4G6K_lig.pdb --noxt --noh --now -anm
