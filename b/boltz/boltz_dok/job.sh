@@ -17,12 +17,12 @@ python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server
 
 # Create results directory
 mkdir -p /opt/artifact/boltz_results_4G6K
-cp ./boltz_results_4G6K/predictions/4G6K_rec/4G6K_rec_model_0.pdb /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K/predictions/4G6K_rec/confidence_4G6K_rec_model_0.json /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K/predictions/4G6K_rec/plddt_4G6K_rec_model_0.npz /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K/predictions/4G6K_lig/4G6K_lig_model_0.pdb /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K/predictions/4G6K_lig/confidence_4G6K_lig_model_0.json /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K/predictions/4G6K_lig/plddt_4G6K_lig_model_0.npz /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/4G6K_rec_model_0.pdb /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/confidence_4G6K_rec_model_0.json /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/plddt_4G6K_rec_model_0.npz /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/4G6K_lig_model_0.pdb /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/confidence_4G6K_lig_model_0.json /opt/artifact/boltz_results_4G6K/
+cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/plddt_4G6K_lig_model_0.npz /opt/artifact/boltz_results_4G6K/
 
 echo "Prediction completed. Results are available in results folder."
 ls /opt/artifact/boltz_results_4G6K/
