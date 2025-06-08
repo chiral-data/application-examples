@@ -4,14 +4,16 @@
 #
 
 echo "Downloading 4G6K.fasta ..."
-wget https://www.rcsb.org/fasta/entry/4G6K -O 4G6K.fasta
-sed -n '1,2p' 4G6K.fasta > 4G6K_rec.fasta
-sed -n '3,4p' 4G6K.fasta > 4G6K_lig.fasta
+#wget https://www.rcsb.org/fasta/entry/4G6K -O 4G6K.fasta
+#sed -n '1,2p' 4G6K.fasta > 4G6K_rec.fasta
+#sed -n '3,4p' 4G6K.fasta > 4G6K_lig.fasta
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_boltz2lightdock/b/boltz/boltz_dok/4G6K_rec.fasta -O 4G6K_rec.fasta
+wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_boltz2lightdock/b/boltz/boltz_dok/4G6K_lig.fasta -O 4G6K_lig.fasta
 
 # Run 
 echo "Run boltz calculation ..."
-python3 -m boltz.main predict 4G6K_rec.fasta
-python3 -m boltz.main predict 4G6K_lig.fasta
+python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server
+python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server
 
 # Create results directory
 mkdir -p /opt/artifact/boltz_results_4G6K
