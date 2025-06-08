@@ -34,10 +34,7 @@ RUN pip install --no-cache-dir boltz
 # Create a working directory
 WORKDIR /workspace
 
-# Copy example input files (if needed)
-# COPY examples/ /workspace/examples/
-
 # Copy the launching script run.sh from the project folder @common
-COPY run.sh /workspace/run.sh
+COPY run_dok.sh /workspace/run_dok.sh
 
 ENTRYPOINT ["/bin/sh"]

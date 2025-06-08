@@ -10,7 +10,7 @@ scripts = [
 docker_image = "chiral.sakuracr.jp/lightdock_dok_python:latest"
 commands = [
   "run_dok.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/l/LightDock/lightdock_dok/job.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_boltz2lightdock/l/LightDock/lightdock_dok/job_4G6K.sh",
 ]
 
 # DOK plan options
