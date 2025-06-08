@@ -17,6 +17,10 @@ python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server
 
 # Create results directory
 mkdir -p /opt/artifact/boltz_results_4G6K
+echo "Results for 4G6K_rec:"
+ls ./boltz_results_4G6K_rec/
+echo "Results for 4G6K_lig:"
+ls ./boltz_results_4G6K_lig/
 cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/4G6K_rec_model_0.pdb /opt/artifact/boltz_results_4G6K/
 cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/confidence_4G6K_rec_model_0.json /opt/artifact/boltz_results_4G6K/
 cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/plddt_4G6K_rec_model_0.npz /opt/artifact/boltz_results_4G6K/
