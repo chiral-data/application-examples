@@ -11,6 +11,9 @@ wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/hea
 # Install dependencies
 pip install IPython --no-cache-dir
 
+# Login to Hugging Face
+huggingface-cli login --token $HF_TOKEN --add-to-git-credential
+
 # Run 
 echo "Run TxGemma ..." | tee -a "$OUTPUT_FILE"
 python3 -m example 2>&1 | tee -a "$OUTPUT_FILE"
