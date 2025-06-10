@@ -5,9 +5,10 @@ from huggingface_hub import hf_hub_download, login
 from IPython.display import display, Markdown
 
 # Login to Hugging Face using environment variable
-login()
-if "HF_TOKEN" not in os.environ:
-    print("Warning: HF_TOKEN not found in environment variables")
+if "HF_TOKEN" in os.environ:
+    login(token=os.environ["HF_TOKEN"])
+else:
+    print("Warning: HF_TOKEN not found in environment variables. Please set HF_TOKEN environment variable.")
 
 def run_example(MODEL_VARIANT, METHOD):
     print("This is an example of using the TxGemma model with Hugging Face Transformers.")
