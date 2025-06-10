@@ -5,6 +5,7 @@ from huggingface_hub import hf_hub_download, login
 from IPython.display import display, Markdown
 
 # Login to Hugging Face using environment variable
+login()
 if "HF_TOKEN" not in os.environ:
     print("Warning: HF_TOKEN not found in environment variables")
 
