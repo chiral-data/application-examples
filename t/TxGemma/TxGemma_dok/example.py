@@ -1,14 +1,14 @@
 import os
 import json
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
-from huggingface_hub import hf_hub_download, login
+from huggingface_hub import hf_hub_download, login, HfFolder
 from IPython.display import display, Markdown
 
-# Login to Hugging Face using environment variable
-if "HF_TOKEN" in os.environ:
-    login(token=os.environ["HF_TOKEN"])
-else:
-    print("Warning: HF_TOKEN not found in environment variables. Please set HF_TOKEN environment variable.")
+# Save the token under cache before login to Hugging Face
+    try:
+        token = HfFolder.get_token()
+    except:
+        print("Warning: Could not load cached token. Please run 'huggingface-cli login' or set HF_TOKEN environment variable.")
 
 def run_example(MODEL_VARIANT, METHOD):
     print("This is an example of using the TxGemma model with Hugging Face Transformers.")
