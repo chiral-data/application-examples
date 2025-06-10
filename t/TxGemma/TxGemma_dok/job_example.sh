@@ -8,6 +8,9 @@ OUTPUT_FILE="txgemma_output.txt"
 echo "Downloading the Python script ..." | tee -a "$OUTPUT_FILE"
 wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/example.py -O example.py 2>&1 | tee -a "$OUTPUT_FILE"
 
+# Install dependencies
+pip install IPython --no-cache-dir
+
 # Run 
 echo "Run TxGemma ..." | tee -a "$OUTPUT_FILE"
 python3 -m example 2>&1 | tee -a "$OUTPUT_FILE"
