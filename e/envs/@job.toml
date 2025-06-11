@@ -1,0 +1,21 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+
+[dok]
+docker_image = "chiral.sakuracr.jp/gromacs_dok_nvidia:latest"
+entrypoint = [
+  "/bin/printenv",
+]
+envs = [
+  "SILVA_PROJECTS_HOME"
+]
+
+# DOK plan options
+ plan = "v100-32gb"
+# plan = "h100-80gb"
