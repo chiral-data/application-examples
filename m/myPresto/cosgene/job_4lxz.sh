@@ -116,7 +116,7 @@ cp ../sample/min.inp .
 # 13. Execute cosgene (Energy minimization)
 ../bin/cosgene < min.inp > min.out &
 
-# 14. Execute SHAKEinp
+echo "Step 14: Execute SHAKEinp"
 echo Pro_4.tpl > inp_shake
 echo Pro_4_min.pdb >> inp_shake
 echo shape_inp >> inp_shake
