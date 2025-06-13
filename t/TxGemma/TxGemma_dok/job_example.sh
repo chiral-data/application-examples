@@ -17,3 +17,9 @@ python3 -m example 2>&1 | tee -a "$OUTPUT_FILE"
 
 echo "" | tee -a "$OUTPUT_FILE"
 echo "Output saved to: $OUTPUT_FILE" | tee -a "$OUTPUT_FILE"
+
+# Create results directory
+mkdir -p /opt/artifact/output_txgemma
+cp ./txgemma_output.txt /opt/artifact/output_txgemma/
+
+ls /opt/artifact/output_txgemma/

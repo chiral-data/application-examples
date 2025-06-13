@@ -2,7 +2,6 @@ import os
 import json
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 from huggingface_hub import hf_hub_download, login, HfFolder
-from IPython.display import display, Markdown
 
 # Save the token under cache before login to Hugging Face
     try:
@@ -70,9 +69,9 @@ def run_example(MODEL_VARIANT, METHOD):
 
         messages = []
 
-        display(Markdown("\n\n---\n\n"))
+        print("\n\n" + "="*50 + "\n")
         for question in questions:
-            display(Markdown(f"**User:**\n\n{question}\n\n---\n\n"))
+            print(f"USER:\n{question}\n\n" + "-"*50 + "\n")
             messages.append(
                 { "role": "user", "content": question },
             )
@@ -80,7 +79,7 @@ def run_example(MODEL_VARIANT, METHOD):
             inputs = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
             outputs = model.generate(input_ids=inputs.to("cuda"), max_new_tokens=512)
             response = tokenizer.decode(outputs[0, len(inputs[0]):], skip_special_tokens=True)
-            display(Markdown(f"**TxGemma:**\n\n{response}\n\n---\n\n"))
+            print(f"TXGEMMA:\n{response}\n\n" + "="*50 + "\n")
             messages.append(
                 { "role": "assistant", "content": response},
             )
@@ -93,16 +92,16 @@ def run_example(MODEL_VARIANT, METHOD):
 
         messages = []
 
-        display(Markdown("\n\n---\n\n"))
+        print("\n\n" + "="*50 + "\n")
         for question in questions:
-            display(Markdown(f"**User:**\n\n{question}\n\n---\n\n"))
+            print(f"USER:\n{question}\n\n" + "-"*50 + "\n")
             messages.append(
                 { "role": "user", "content": question },
             )
             outputs = pipe(messages, max_new_tokens=512)
             messages = outputs[0]["generated_text"]
             response = messages[-1]["content"].strip()
-            display(Markdown(f"**TxGemma:**\n\n{response}\n\n---\n\n"))
+            print(f"TXGEMMA:\n{response}\n\n" + "="*50 + "\n")
 
 
 
