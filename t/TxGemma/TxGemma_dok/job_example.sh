@@ -19,7 +19,7 @@ echo "" | tee -a "$OUTPUT_FILE"
 echo "Output saved to: $OUTPUT_FILE" | tee -a "$OUTPUT_FILE"
 
 # Create results directory
-mkdir -p /opt/artifact/output_txgemma
-cp ./txgemma_output.txt /opt/artifact/output_txgemma/
+mkdir -p /opt/artifact/outputs
+cp ./example_output.txt /opt/artifact/outputs/
 
-ls /opt/artifact/output_txgemma/
+ls /opt/artifact/outputs/

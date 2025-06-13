@@ -4,10 +4,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from huggingface_hub import hf_hub_download, login, HfFolder
 
 # Save the token under cache before login to Hugging Face
-    try:
-        token = HfFolder.get_token()
-    except:
-        print("Warning: Could not load cached token. Please run 'huggingface-cli login' or set HF_TOKEN environment variable.")
+try:
+    token = HfFolder.get_token()
+except:
+    print("Warning: Could not load cached token. Please run 'huggingface-cli login' or set HF_TOKEN environment variable.")
 
 def run_example(MODEL_VARIANT, METHOD):
     print("This is an example of using the TxGemma model with Hugging Face Transformers.")
