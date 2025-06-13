@@ -26,9 +26,9 @@ def run_example(MODEL_VARIANT, METHOD):
 
     elif METHOD == "pipeline":
         pipe = pipeline(
-        "text-generation",
-        model = model,
-        tokenizer = tokenizer,
+            "text-generation",
+            model = model,
+            tokenizer = tokenizer,
         )
 
     # 2. Format prompts for therapeutic tasks
