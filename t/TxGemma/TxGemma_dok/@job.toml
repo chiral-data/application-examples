@@ -15,7 +15,7 @@ envs = [
 
 commands = [
   "run_dok.sh",
-  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/job_example.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/t/TxGemma/TxGemma_dok/job_example.sh",
 ]
 # DOK plan options
 # plan = "v100-32gb"
