@@ -12,7 +12,7 @@ mount_volume = "/workspace"
 script = "job.sh"
 
 [dok]
-docker_image = "chiral.sakuracr.jp/gromacs_2023_2_rebuild:latest"
+docker_image = "chiral.sakuracr.jp/gromacs_dok_nvidia:latest"
 commands = [
   "run_dok.sh",
   "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_gromacsAb/g/gromacs/antibody_antigen/job_5dk3.sh",
