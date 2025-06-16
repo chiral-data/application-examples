@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# Antibody-antigen simulation using GROMACS
+# Reference: https://academic.oup.com/database/article/doi/10.1093/database/baae015/7631862?login=false#468860647
+#            http://www.mdtutorials.com/gmx/lysozyme/index.html
 
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 

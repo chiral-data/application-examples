@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# Lysozyme in water simulation using GROMACS
+# Reference: http://www.mdtutorials.com/gmx/lysozyme/index.html
 
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 
