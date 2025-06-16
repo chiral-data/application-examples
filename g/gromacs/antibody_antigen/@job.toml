@@ -1,0 +1,23 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+[infra_local]
+docker_image = "nvcr.io/hpc/gromacs:2023.2"
+mount_volume = "/workspace"
+script = "job.sh"
+
+[dok]
+docker_image = "chiral.sakuracr.jp/gromacs_2023_2_rebuild:latest"
+commands = [
+  "run_dok.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4_gromacsAb/g/gromacs/antibody_antigen/job_5dk3.sh",
+]
+
+# DOK plan options
+# plan = "v100-32gb"
+plan = "h100-80gb"
