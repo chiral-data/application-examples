@@ -1,0 +1,22 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+[dok]
+docker_image = "chiral.sakuracr.jp/txgemma_dok_nvidia:latest"
+
+envs = [
+  "HF_TOKEN"
+]
+
+commands = [
+  "run_dok.sh",
+  "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/job_example.sh",
+]
+# DOK plan options
+# plan = "v100-32gb"
+plan = "h100-80gb"
