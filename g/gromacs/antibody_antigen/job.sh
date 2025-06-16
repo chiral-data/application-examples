@@ -28,6 +28,9 @@ $GMX grompp -f em.mdp -c solv_ions.gro -p topol.top -o em.tpr
 $GMX mdrun -v -deffnm em
 echo 10 0 | $GMX energy -f em.edr -o potential.xvg
 
+# Create index file for system groups
+echo q  < /dev/null |  $GMX make_ndx -f em.gro -o index.ndx
+
 # NVT equilibration 
 $GMX grompp -f nvt.mdp -c em.gro -r em.gro -p topol.top -n index.ndx -o nvt.tpr 
 $GMX mdrun -deffnm nvt
