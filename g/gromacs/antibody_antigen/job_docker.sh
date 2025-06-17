@@ -1,8 +1,10 @@
 #!/bin/bash
 #
-# Antibody-antigen simulation using GROMACS
+# Antibody-antigen simulation using GROMACS (Docker version)
 # Reference: https://academic.oup.com/database/article/doi/10.1093/database/baae015/7631862?login=false#468860647
 #            http://www.mdtutorials.com/gmx/lysozyme/index.html
+#
+# Note: This version uses printf instead of echo -e for Docker compatibility
 
 GMX=/usr/local/gromacs/avx2_256/bin/gmx
 
@@ -34,12 +36,12 @@ echo 10 0 | $GMX energy -f em.edr -o potential.xvg
 # Create index file for system groups
 echo q  < /dev/null |  $GMX make_ndx -f em.gro -o index.ndx
 
-# NVT equilibration 
+# NVT equilibration 
 $GMX grompp -f nvt.mdp -c em.gro -r em.gro -p topol.top -n index.ndx -o nvt.tpr 
 $GMX mdrun -deffnm nvt
 echo 16 0 | $GMX energy -f nvt.edr -o temperature.xvg
 
-# NPT equilibration 
+# NPT equilibration 
 $GMX grompp -f npt.mdp -c nvt.gro -t nvt.cpt -r nvt.gro -p topol.top -n index.ndx -o npt.tpr
 $GMX mdrun -deffnm npt
 echo 18 0 | $GMX energy -f npt.edr -o pressure.xvg
@@ -51,12 +53,12 @@ $GMX mdrun -deffnm md_0_10
 
 # Recentering and Rewrapping Coordinates
 # Select group 1 (Protein) for clustering and group 0 (System) for output
-echo -e "1\n0" | $GMX trjconv -s md_0_10.tpr -f md_0_10.xtc -o dynamic-nopbc.xtc -pbc cluster
+printf "1\n0\n" | $GMX trjconv -s md_0_10.tpr -f md_0_10.xtc -o dynamic-nopbc.xtc -pbc cluster
 
 
 ## ANALYSIS
 # Root Mean Square Deviation (RMSD) - Group 4 (Backbone) for both reference and comparison
-echo -e "4\n4" | $GMX rms -s md_0_10.tpr -f dynamic-nopbc.xtc -o rmsd.xvg -tu ns
+printf "4\n4\n" | $GMX rms -s md_0_10.tpr -f dynamic-nopbc.xtc -o rmsd.xvg -tu ns
 # RMSF - Group 3 (C-alpha)
 echo "3" | $GMX rmsf -s md_0_10.tpr -f dynamic-nopbc.xtc -o rmsf.xvg -res
 # SASA - Group 1 (Protein)
@@ -64,4 +66,4 @@ echo "1" | $GMX sasa -s md_0_10.tpr -f dynamic-nopbc.xtc -o sasa.xvg
 # Radius of Gyration - Group 1 (Protein)
 echo "1" | $GMX gyrate -s md_0_10.tpr -f dynamic-nopbc.xtc -o gyrate.xvg
 # Hydrogen Bonds - Group 1 (Protein) for both groups
-echo -e "1\n1" | $GMX hbond -s md_0_10.tpr -f dynamic-nopbc.xtc -num hbond.xvg
+printf "1\n1\n" | $GMX hbond -s md_0_10.tpr -f dynamic-nopbc.xtc -num hbond.xvg
