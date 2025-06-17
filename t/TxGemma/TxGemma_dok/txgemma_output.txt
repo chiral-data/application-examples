@@ -1,0 +1,262 @@
+Downloading the Python script ...
+--2025-06-10 12:39:30--  https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/example.py
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 185.199.108.133, 185.199.111.133, 185.199.110.133, ...
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|185.199.108.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4054 (4.0K) [text/plain]
+Saving to: 'example.py'
+
+     0K ...                                                   100% 25.8M=0s
+
+2025-06-10 12:39:31 (25.8 MB/s) - 'example.py' saved [4054/4054]
+
+Run TxGemma ...
+Warning: HF_TOKEN not found in environment variables. Please set HF_TOKEN environment variable.
+This is an example of using the TxGemma model with Hugging Face Transformers.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 409, in hf_raise_for_status
+    response.raise_for_status()
+  File "/usr/local/lib/python3.10/dist-packages/requests/models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 470, in cached_files
+    hf_hub_download(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1008, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1115, in _hf_hub_download_to_cache_dir
+    _raise_on_head_call_error(head_call_error, force_download, local_files_only)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1645, in _raise_on_head_call_error
+    raise head_call_error
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1533, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1450, in get_hf_file_metadata
+    r = _request_wrapper(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 286, in _request_wrapper
+    response = _request_wrapper(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 310, in _request_wrapper
+    hf_raise_for_status(response)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 426, in hf_raise_for_status
+    raise _format(GatedRepoError, message, response) from e
+huggingface_hub.errors.GatedRepoError: 401 Client Error. (Request ID: Root=1-6848278a-756deb0b29596c6b1e4b7813;05ecffb1-a8d5-4ef5-b117-d309d60a630b)
+
+Cannot access gated repo for url https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json.
+Access to model google/txgemma-9b-chat is restricted. You must have access to it and be authenticated to access it. Please log in.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/workspace/example.py", line 112, in <module>
+    run_example(MODEL_VARIANT, METHOD)
+  File "/workspace/example.py", line 27, in run_example
+    model = AutoModelForCausalLM.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/models/auto/auto_factory.py", line 531, in from_pretrained
+    config, kwargs = AutoConfig.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/models/auto/configuration_auto.py", line 1153, in from_pretrained
+    config_dict, unused_kwargs = PretrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/configuration_utils.py", line 595, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/configuration_utils.py", line 654, in _get_config_dict
+    resolved_config_file = cached_file(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 312, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 533, in cached_files
+    raise OSError(
+OSError: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/txgemma-9b-chat.
+401 Client Error. (Request ID: Root=1-6848278a-756deb0b29596c6b1e4b7813;05ecffb1-a8d5-4ef5-b117-d309d60a630b)
+
+Cannot access gated repo for url https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json.
+Access to model google/txgemma-9b-chat is restricted. You must have access to it and be authenticated to access it. Please log in.
+
+Output saved to: txgemma_output.txt
+Downloading the Python script ...
+--2025-06-10 12:51:34--  https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/example.py
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 185.199.108.133, 185.199.111.133, 185.199.110.133, ...
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|185.199.108.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4054 (4.0K) [text/plain]
+Saving to: 'example.py'
+
+     0K ...                                                   100% 17.4M=0s
+
+2025-06-10 12:51:34 (17.4 MB/s) - 'example.py' saved [4054/4054]
+
+Run TxGemma ...
+Warning: HF_TOKEN not found in environment variables. Please set HF_TOKEN environment variable.
+This is an example of using the TxGemma model with Hugging Face Transformers.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 409, in hf_raise_for_status
+    response.raise_for_status()
+  File "/usr/local/lib/python3.10/dist-packages/requests/models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 470, in cached_files
+    hf_hub_download(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1008, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1115, in _hf_hub_download_to_cache_dir
+    _raise_on_head_call_error(head_call_error, force_download, local_files_only)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1645, in _raise_on_head_call_error
+    raise head_call_error
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1533, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1450, in get_hf_file_metadata
+    r = _request_wrapper(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 286, in _request_wrapper
+    response = _request_wrapper(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 310, in _request_wrapper
+    hf_raise_for_status(response)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 426, in hf_raise_for_status
+    raise _format(GatedRepoError, message, response) from e
+huggingface_hub.errors.GatedRepoError: 401 Client Error. (Request ID: Root=1-68482a5d-0eee30123cb87f68392f4bff;d3cd19ad-5d3c-43d3-a0aa-fddf98566f10)
+
+Cannot access gated repo for url https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json.
+Access to model google/txgemma-9b-chat is restricted. You must have access to it and be authenticated to access it. Please log in.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/workspace/example.py", line 112, in <module>
+    run_example(MODEL_VARIANT, METHOD)
+  File "/workspace/example.py", line 27, in run_example
+    model = AutoModelForCausalLM.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/models/auto/auto_factory.py", line 531, in from_pretrained
+    config, kwargs = AutoConfig.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/models/auto/configuration_auto.py", line 1153, in from_pretrained
+    config_dict, unused_kwargs = PretrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/configuration_utils.py", line 595, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/configuration_utils.py", line 654, in _get_config_dict
+    resolved_config_file = cached_file(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 312, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/utils/hub.py", line 533, in cached_files
+    raise OSError(
+OSError: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/txgemma-9b-chat.
+401 Client Error. (Request ID: Root=1-68482a5d-0eee30123cb87f68392f4bff;d3cd19ad-5d3c-43d3-a0aa-fddf98566f10)
+
+Cannot access gated repo for url https://huggingface.co/google/txgemma-9b-chat/resolve/main/config.json.
+Access to model google/txgemma-9b-chat is restricted. You must have access to it and be authenticated to access it. Please log in.
+
+Output saved to: txgemma_output.txt
+Downloading the Python script ...
+--2025-06-10 12:53:42--  https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/example.py
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 185.199.109.133, 185.199.110.133, 185.199.108.133, ...
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|185.199.109.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4054 (4.0K) [text/plain]
+Saving to: 'example.py'
+
+     0K ...                                                   100%  120M=0s
+
+2025-06-10 12:53:42 (120 MB/s) - 'example.py' saved [4054/4054]
+
+Run TxGemma ...
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 409, in hf_raise_for_status
+    response.raise_for_status()
+  File "/usr/local/lib/python3.10/dist-packages/requests/models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/api/whoami-v2
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/hf_api.py", line 1746, in whoami
+    hf_raise_for_status(r)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_http.py", line 482, in hf_raise_for_status
+    raise _format(HfHubHTTPError, str(e), response) from e
+huggingface_hub.errors.HfHubHTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/api/whoami-v2 (Request ID: Root=1-68482add-6d15043572bb139007b458e7;6fd255ad-2e62-49f2-91d6-0962a2c66a98)
+
+Invalid credentials in Authorization header
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/workspace/example.py", line 9, in <module>
+    login(token=os.environ["HF_TOKEN"])
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_deprecation.py", line 101, in inner_f
+    return f(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_deprecation.py", line 31, in inner_f
+    return f(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/_login.py", line 126, in login
+    _login(token, add_to_git_credential=add_to_git_credential)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/_login.py", line 404, in _login
+    token_info = whoami(token)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/hf_api.py", line 1759, in whoami
+    raise HTTPError(error_message, request=e.request, response=e.response) from e
+requests.exceptions.HTTPError: Invalid user token. The token from HF_TOKEN environment variable is invalid. Note that HF_TOKEN takes precedence over `huggingface-cli login`.
+
+Output saved to: txgemma_output.txt
+Downloading the Python script ...
+--2025-06-10 12:55:48--  https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4-TxGemma/t/TxGemma/TxGemma_dok/example.py
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 185.199.109.133, 185.199.110.133, 185.199.108.133, ...
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|185.199.109.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4054 (4.0K) [text/plain]
+Saving to: 'example.py'
+
+     0K ...                                                   100%  130M=0s
+
+2025-06-10 12:55:48 (130 MB/s) - 'example.py' saved [4054/4054]
+
+Run TxGemma ...
+Note: Environment variable`HF_TOKEN` is set and is the current active token independently from the token you've just configured.
+This is an example of using the TxGemma model with Hugging Face Transformers.
+The installed version of bitsandbytes was compiled without GPU support. 8-bit optimizers and GPU quantization are unavailable.
+None of the available devices `available_devices = None` are supported by the bitsandbytes version you have installed: `bnb_supported_devices = {'mps', 'cuda', '"cpu" (needs an Intel CPU and intel_extension_for_pytorch installed and compatible with the PyTorch version)', 'xpu', 'hpu', 'npu'}`. Please check the docs to see if the backend you intend to use is available and how to install it: https://huggingface.co/docs/bitsandbytes/main/en/installation#multi-backend
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/workspace/example.py", line 112, in <module>
+    run_example(MODEL_VARIANT, METHOD)
+  File "/workspace/example.py", line 27, in run_example
+    model = AutoModelForCausalLM.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+    return model_class.from_pretrained(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py", line 309, in _wrapper
+    return func(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py", line 4390, in from_pretrained
+    hf_quantizer.validate_environment(
+  File "/usr/local/lib/python3.10/dist-packages/transformers/quantizers/quantizer_bnb_8bit.py", line 81, in validate_environment
+    validate_bnb_backend_availability(raise_exception=True)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/integrations/bitsandbytes.py", line 560, in validate_bnb_backend_availability
+    return _validate_bnb_multi_backend_availability(raise_exception)
+  File "/usr/local/lib/python3.10/dist-packages/transformers/integrations/bitsandbytes.py", line 517, in _validate_bnb_multi_backend_availability
+    raise RuntimeError(err_msg)
+RuntimeError: None of the available devices `available_devices = None` are supported by the bitsandbytes version you have installed: `bnb_supported_devices = {'mps', 'cuda', '"cpu" (needs an Intel CPU and intel_extension_for_pytorch installed and compatible with the PyTorch version)', 'xpu', 'hpu', 'npu'}`. Please check the docs to see if the backend you intend to use is available and how to install it: https://huggingface.co/docs/bitsandbytes/main/en/installation#multi-backend
+
+Output saved to: txgemma_output.txt
