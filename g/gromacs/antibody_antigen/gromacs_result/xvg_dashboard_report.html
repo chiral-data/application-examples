@@ -1,0 +1,689 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GROMACS Analysis Dashboard</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin: 0 0 10px 0;
+        }
+        
+        .dashboard-header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin: 0;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .score-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-left: 5px solid;
+        }
+        
+        .score-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .score-card.excellent { border-left-color: #27ae60; }
+        .score-card.good { border-left-color: #2ecc71; }
+        .score-card.fair { border-left-color: #f39c12; }
+        .score-card.poor { border-left-color: #e67e22; }
+        .score-card.critical { border-left-color: #e74c3c; }
+        
+        .score-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .score-icon {
+            font-size: 1.5em;
+        }
+        
+        .score-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .score-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        
+        .score-grade {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .score-card.excellent .score-grade { color: #27ae60; }
+        .score-card.good .score-grade { color: #2ecc71; }
+        .score-card.fair .score-grade { color: #f39c12; }
+        .score-card.poor .score-grade { color: #e67e22; }
+        .score-card.critical .score-grade { color: #e74c3c; }
+        
+        .score-desc {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+        }
+        
+        .radar-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .radar-container h3 {
+            text-align: center;
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+        }
+        
+        .insights {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            border-left: 5px solid #27ae60;
+        }
+        
+        .insights h3 {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+        }
+        
+        .insights ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .insights li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .plots-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .plots-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 20px;
+        }
+        
+        .plots-header h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin: 0;
+        }
+        
+        .toc {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .toc li {
+            margin: 0;
+        }
+        
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+            border-radius: 5px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            background: white;
+        }
+        
+        .toc a:hover {
+            background: #3498db;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .plot-container {
+            background: white;
+            margin: 30px 0;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .plot-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .plot-info {
+            background: linear-gradient(135deg, #ecf0f1 0%, #e8eef2 100%);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .plot-info strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .plot-info code {
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            padding: 15px;
+            border-radius: 50%;
+            text-decoration: none;
+            font-size: 20px;
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .back-to-top:hover {
+            opacity: 1;
+            transform: translateY(-3px);
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+            }
+            
+            .summary-stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .score-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>🧬 Simulation Quality Dashboard</h1>
+            <p>Comprehensive analysis of molecular dynamics simulation results</p>
+        </div>
+        
+        
+    <div class="summary-stats">
+        <div class="stat-item">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Analyses</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">1610.0</div>
+            <div class="stat-label">Simulation Time (ns)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">3,321</div>
+            <div class="stat-label">Data Points</div>
+        </div>
+    </div>
+    
+        
+        <div class="score-grid">
+            
+            <div class="score-card critical">
+                <div class="score-header">
+                    <span class="score-icon">🏗️</span>
+                    <span class="score-title">Structural Stability</span>
+                </div>
+                <div class="score-value">28.8</div>
+                <div class="score-grade">F</div>
+                <div class="score-desc">Protein structure preservation (RMSD-based)</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 28.835899246702947%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card excellent">
+                <div class="score-header">
+                    <span class="score-icon">⚖️</span>
+                    <span class="score-title">Thermodynamic Equilibrium</span>
+                </div>
+                <div class="score-value">95.0</div>
+                <div class="score-grade">A+</div>
+                <div class="score-desc">Temperature and pressure stability</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 95%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card excellent">
+                <div class="score-header">
+                    <span class="score-icon">⚡</span>
+                    <span class="score-title">Energetic Stability</span>
+                </div>
+                <div class="score-value">95.0</div>
+                <div class="score-grade">A+</div>
+                <div class="score-desc">Potential energy convergence</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 95%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card fair">
+                <div class="score-header">
+                    <span class="score-icon">🔗</span>
+                    <span class="score-title">Binding Affinity</span>
+                </div>
+                <div class="score-value">79.6</div>
+                <div class="score-grade">B</div>
+                <div class="score-desc">Hydrogen bonding and molecular interactions</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 79.58641975308642%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card excellent">
+                <div class="score-header">
+                    <span class="score-icon">📦</span>
+                    <span class="score-title">Compactness</span>
+                </div>
+                <div class="score-value">95.0</div>
+                <div class="score-grade">A+</div>
+                <div class="score-desc">Radius of gyration stability</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 95%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card excellent">
+                <div class="score-header">
+                    <span class="score-icon">🌊</span>
+                    <span class="score-title">Surface Properties</span>
+                </div>
+                <div class="score-value">95.0</div>
+                <div class="score-grade">A+</div>
+                <div class="score-desc">Solvent accessible surface area stability</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 95%"></div>
+                </div>
+            </div>
+            
+            <div class="score-card good">
+                <div class="score-header">
+                    <span class="score-icon">🎯</span>
+                    <span class="score-title">Overall Quality</span>
+                </div>
+                <div class="score-value">81.4</div>
+                <div class="score-grade">B+</div>
+                <div class="score-desc">Comprehensive simulation quality assessment</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 81.40371983329823%"></div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <div class="radar-container">
+            <h3>Quality Assessment Radar</h3>
+            <div id="radarChart"></div>
+        </div>
+        
+        <div class="insights">
+            <h3>💡 Key Insights</h3>
+            <ul><li>✅ <strong>Good simulation quality</strong> - System shows acceptable stability with minor concerns</li><li>⚠️ <strong>Structural instability detected</strong> - High RMSD values suggest significant conformational changes</li><li>✅ <strong>System well equilibrated</strong> - Temperature and pressure show excellent stability</li></ul>
+        </div>
+    </div>
+    
+    <script>
+        // Radar chart
+        var radarData = {"labels": ["Structural", "Thermodynamic", "Energetic", "Binding", "Compactness", "Surface"], "values": [28.835899246702947, 95, 95, 79.58641975308642, 95, 95]};
+        var radarTrace = {
+            type: 'scatterpolar',
+            r: radarData.values,
+            theta: radarData.labels,
+            fill: 'toself',
+            name: 'Quality Scores',
+            line: { color: '#3498db' },
+            fillcolor: 'rgba(52, 152, 219, 0.3)'
+        };
+        
+        var radarLayout = {
+            polar: {
+                radialaxis: {
+                    visible: true,
+                    range: [0, 100]
+                }
+            },
+            showlegend: false,
+            height: 400
+        };
+        
+        Plotly.newPlot('radarChart', [radarTrace], radarLayout, {responsive: true});
+    </script>
+    
+        
+        <div class="plots-section">
+            <div class="plots-header">
+                <h2>📊 Detailed Analysis Plots</h2>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h3>🗂️ Analysis Overview</h3>
+                <ul>
+                    <li><a href="#plot0">GROMACS Energies <small>(density.xvg)</small></a></li>
+                    <li><a href="#plot1">Radius of gyration (total and around axes) <small>(gyrate.xvg)</small></a></li>
+                    <li><a href="#plot2">Hydrogen Bonds <small>(hbond.xvg)</small></a></li>
+                    <li><a href="#plot3">GROMACS Energies <small>(potential.xvg)</small></a></li>
+                    <li><a href="#plot4">GROMACS Energies <small>(pressure.xvg)</small></a></li>
+                    <li><a href="#plot5">Backbone after lsq fit to Backbone <small>(rmsd.xvg)</small></a></li>
+                    <li><a href="#plot6">RMS fluctuation <small>(rmsf.xvg)</small></a></li>
+                    <li><a href="#plot7">Solvent Accessible Surface <small>(sasa.xvg)</small></a></li>
+                    <li><a href="#plot8">GROMACS Energies <small>(temperature.xvg)</small></a></li>
+                </ul>
+            </div>
+            
+            <!-- Plots -->
+
+            <div class="plot-container" id="plot0">
+                <h2>GROMACS Energies</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> density.xvg<br>
+                    <strong>📈 Data points:</strong> 101<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx energy -f npt.edr -o density.xvg</code>
+                </div>
+                <div id="plotDiv0"></div>
+            </div>
+
+            <div class="plot-container" id="plot1">
+                <h2>Radius of gyration (total and around axes)</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> gyrate.xvg<br>
+                    <strong>📈 Data points:</strong> 162<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx gyrate -s md_0_10.tpr -f dynamic-nopbc.xtc -o gyrate.xvg</code>
+                </div>
+                <div id="plotDiv1"></div>
+            </div>
+
+            <div class="plot-container" id="plot2">
+                <h2>Hydrogen Bonds</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> hbond.xvg<br>
+                    <strong>📈 Data points:</strong> 162<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx hbond -s md_0_10.tpr -f dynamic-nopbc.xtc -num hbond.xvg</code>
+                </div>
+                <div id="plotDiv2"></div>
+            </div>
+
+            <div class="plot-container" id="plot3">
+                <h2>GROMACS Energies</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> potential.xvg<br>
+                    <strong>📈 Data points:</strong> 1,046<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx energy -f em.edr -o potential.xvg</code>
+                </div>
+                <div id="plotDiv3"></div>
+            </div>
+
+            <div class="plot-container" id="plot4">
+                <h2>GROMACS Energies</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> pressure.xvg<br>
+                    <strong>📈 Data points:</strong> 101<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx energy -f npt.edr -o pressure.xvg</code>
+                </div>
+                <div id="plotDiv4"></div>
+            </div>
+
+            <div class="plot-container" id="plot5">
+                <h2>Backbone after lsq fit to Backbone</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> rmsd.xvg<br>
+                    <strong>📈 Data points:</strong> 162<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx rms -s md_0_10.tpr -f dynamic-nopbc.xtc -o rmsd.xvg -tu ns</code>
+                </div>
+                <div id="plotDiv5"></div>
+            </div>
+
+            <div class="plot-container" id="plot6">
+                <h2>RMS fluctuation</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> rmsf.xvg<br>
+                    <strong>📈 Data points:</strong> 1,324<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx rmsf -s md_0_10.tpr -f dynamic-nopbc.xtc -o rmsf.xvg -res</code>
+                </div>
+                <div id="plotDiv6"></div>
+            </div>
+
+            <div class="plot-container" id="plot7">
+                <h2>Solvent Accessible Surface</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> sasa.xvg<br>
+                    <strong>📈 Data points:</strong> 162<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx sasa -s md_0_10.tpr -f dynamic-nopbc.xtc -o sasa.xvg</code>
+                </div>
+                <div id="plotDiv7"></div>
+            </div>
+
+            <div class="plot-container" id="plot8">
+                <h2>GROMACS Energies</h2>
+                <div class="plot-info">
+                    <strong>📁 File:</strong> temperature.xvg<br>
+                    <strong>📈 Data points:</strong> 101<br>
+                    <strong>⚙️ GROMACS command:</strong> <code>gmx energy -f nvt.edr -o temperature.xvg</code>
+                </div>
+                <div id="plotDiv8"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>🧬 Advanced GROMACS Analysis Dashboard • Generated on 2025-06-18 17:47:52</p>
+        <p>Powered by Python, Plotly.js, and Scientific Computing</p>
+    </div>
+    
+    <a href="#" class="back-to-top">↑</a>
+    
+    <script>
+
+        var plotData0 = {"data": [{"x": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0], "y": [3364.601562, 3348.418213, 3355.581543, 3366.918701, 3352.032959, 3359.804199, 3362.246094, 3367.382324, 3351.846924, 3357.941406, 3365.273438, 3370.811523, 3336.847412, 3362.226807, 3365.835205, 3352.016846, 3362.198242, 3375.312988, 3343.894043, 3375.43457, 3364.302734, 3353.182617, 3361.384766, 3365.572266, 3359.134033, 3361.345703, 3358.672119, 3352.640381, 3366.340576, 3358.779785, 3361.306152, 3353.111816, 3368.476318, 3354.497559, 3363.154541, 3359.505859, 3349.002441, 3355.820312, 3369.240479, 3351.659424, 3369.329834, 3372.7854, 3349.348389, 3368.842041, 3367.45459, 3347.244385, 3370.952637, 3370.158203, 3350.578369, 3355.326904, 3367.019775, 3351.099854, 3357.335938, 3362.020752, 3348.046387, 3369.94873, 3360.006348, 3360.403564, 3362.503418, 3355.764404, 3363.16748, 3371.037109, 3338.738525, 3361.764893, 3365.592773, 3355.598877, 3360.244141, 3369.234619, 3357.938232, 3357.36792, 3365.962646, 3363.231445, 3353.02417, 3360.982422, 3352.593506, 3361.479736, 3372.18457, 3345.28833, 3356.391846, 3376.202881, 3351.984863, 3370.223633, 3368.688232, 3341.481445, 3368.998535, 3371.421143, 3349.840088, 3367.610352, 3361.095459, 3358.423096, 3358.413818, 3365.575439, 3357.733643, 3363.114746, 3352.246582, 3360.914795, 3359.175293, 3371.314209, 3358.674561, 3348.800293, 3369.38501], "type": "scatter", "mode": "lines", "name": "Volume", "line": {"width": 2}}], "layout": {"title": {"text": "GROMACS Energies", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "(nm^3)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv0', plotData0.data, plotData0.layout, {responsive: true});
+
+        var plotData1 = {"data": [{"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [4.30449, 4.30394, 4.30314, 4.29696, 4.32506, 4.30862, 4.31417, 4.30111, 4.32547, 4.30576, 4.30745, 4.31595, 4.32289, 4.32812, 4.32276, 4.33372, 4.35223, 4.362, 4.35108, 4.37418, 4.39192, 4.37362, 4.36605, 4.36172, 4.36029, 4.33967, 4.31721, 4.28832, 4.30442, 4.30431, 4.28778, 4.29144, 4.28248, 4.29319, 4.26657, 4.27772, 4.28503, 4.29028, 4.29013, 4.30336, 4.2981, 4.288, 4.29058, 4.28942, 4.31047, 4.31369, 4.30528, 4.33223, 4.32426, 4.31375, 4.31677, 4.32444, 4.32862, 4.31306, 4.30394, 4.30511, 4.31058, 4.33251, 4.3288, 4.33234, 4.33034, 4.31819, 4.31853, 4.30769, 4.31173, 4.29466, 4.30584, 4.30717, 4.3063, 4.31629, 4.31381, 4.29353, 4.31457, 4.31293, 4.31803, 4.32294, 4.32174, 4.33595, 4.33745, 4.32753, 4.32531, 4.34318, 4.33039, 4.32975, 4.32536, 4.3403, 4.34155, 4.32338, 4.34071, 4.34477, 4.34933, 4.34517, 4.34175, 4.32328, 4.32537, 4.32236, 4.30268, 4.28953, 4.29429, 4.29457, 4.29216, 4.28813, 4.28976, 4.30256, 4.31442, 4.30463, 4.2981, 4.31568, 4.31892, 4.30395, 4.31243, 4.28934, 4.27575, 4.28469, 4.28345, 4.29581, 4.28821, 4.28197, 4.2907, 4.2987, 4.27728, 4.28182, 4.27236, 4.25091, 4.26209, 4.25057, 4.25721, 4.25549, 4.25742, 4.26271, 4.27598, 4.25574, 4.26097, 4.28365, 4.29068, 4.3104, 4.30835, 4.30578, 4.29364, 4.29977, 4.30466, 4.31351, 4.31306, 4.30567, 4.30986, 4.31865, 4.30575, 4.29264, 4.28949, 4.30768, 4.30139, 4.31378, 4.31459, 4.31004, 4.33348, 4.31186, 4.31931, 4.33134, 4.35363, 4.33299, 4.32213, 4.31875], "type": "scatter", "mode": "lines", "name": "Rg", "line": {"width": 2}}, {"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [3.41273, 3.4171, 3.41357, 3.39982, 3.41485, 3.40795, 3.40466, 3.39086, 3.41304, 3.39293, 3.39, 3.37861, 3.38597, 3.40982, 3.41475, 3.42114, 3.41944, 3.42006, 3.4063, 3.42741, 3.4496, 3.42328, 3.42849, 3.42778, 3.43114, 3.42163, 3.42716, 3.41168, 3.42337, 3.41721, 3.39545, 3.40303, 3.39678, 3.4031, 3.38328, 3.39249, 3.39181, 3.39935, 3.39256, 3.38724, 3.37872, 3.36505, 3.36342, 3.34758, 3.36034, 3.3678, 3.35855, 3.36954, 3.34738, 3.34392, 3.3659, 3.36272, 3.35886, 3.34571, 3.31859, 3.31521, 3.31237, 3.32489, 3.32725, 3.33273, 3.33508, 3.32438, 3.32599, 3.33769, 3.34466, 3.32723, 3.3438, 3.34431, 3.3462, 3.36274, 3.34508, 3.32347, 3.35399, 3.36761, 3.38128, 3.38954, 3.39315, 3.40542, 3.41657, 3.41697, 3.40908, 3.43676, 3.4225, 3.41292, 3.41053, 3.40897, 3.40393, 3.39383, 3.40587, 3.40852, 3.4071, 3.40132, 3.39512, 3.38926, 3.3898, 3.39729, 3.37851, 3.38033, 3.37874, 3.3743, 3.37165, 3.36154, 3.36313, 3.36145, 3.36984, 3.37243, 3.36139, 3.39549, 3.39528, 3.39302, 3.40829, 3.39172, 3.39792, 3.38884, 3.37993, 3.39097, 3.39477, 3.3854, 3.38826, 3.40583, 3.38008, 3.39175, 3.39308, 3.38252, 3.38712, 3.37574, 3.36781, 3.3703, 3.3663, 3.37233, 3.38523, 3.37025, 3.39318, 3.40704, 3.42631, 3.43628, 3.43785, 3.44427, 3.43286, 3.44209, 3.44469, 3.45215, 3.45623, 3.44551, 3.44899, 3.47485, 3.46487, 3.46326, 3.45987, 3.4877, 3.48104, 3.50222, 3.51079, 3.52087, 3.54061, 3.5159, 3.51225, 3.52524, 3.54607, 3.51057, 3.51196, 3.51565], "type": "scatter", "mode": "lines", "name": "Rg\\sX\\N", "line": {"width": 2}}, {"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [3.61361, 3.60034, 3.60853, 3.60949, 3.63873, 3.63559, 3.6482, 3.63468, 3.65174, 3.6356, 3.64916, 3.65826, 3.66489, 3.64977, 3.63564, 3.64264, 3.66497, 3.67111, 3.6563, 3.66998, 3.68004, 3.66985, 3.64717, 3.64154, 3.63679, 3.61493, 3.60121, 3.57402, 3.59545, 3.60436, 3.58776, 3.59351, 3.59109, 3.59528, 3.56828, 3.58546, 3.59081, 3.58259, 3.57743, 3.59034, 3.58733, 3.57727, 3.57373, 3.57843, 3.60081, 3.61259, 3.59402, 3.6149, 3.61499, 3.60157, 3.59717, 3.61189, 3.62093, 3.60633, 3.61403, 3.62419, 3.62431, 3.64206, 3.64531, 3.64823, 3.63724, 3.62196, 3.61564, 3.5992, 3.61812, 3.60088, 3.61524, 3.62485, 3.62204, 3.63619, 3.63809, 3.62333, 3.629, 3.6174, 3.6105, 3.60252, 3.5997, 3.61621, 3.61349, 3.60878, 3.61444, 3.61488, 3.60832, 3.61849, 3.61887, 3.63421, 3.62782, 3.6057, 3.62034, 3.62279, 3.6377, 3.64344, 3.64585, 3.61996, 3.62896, 3.62349, 3.61213, 3.59177, 3.59805, 3.60265, 3.60047, 3.60204, 3.61425, 3.63203, 3.64379, 3.62512, 3.62454, 3.62442, 3.62853, 3.61784, 3.62006, 3.59589, 3.57757, 3.58162, 3.5782, 3.59519, 3.58332, 3.59082, 3.60536, 3.60766, 3.60561, 3.60589, 3.59924, 3.57334, 3.58146, 3.56969, 3.57184, 3.57516, 3.58023, 3.58025, 3.59332, 3.58393, 3.58161, 3.60799, 3.60577, 3.62928, 3.62776, 3.61274, 3.59969, 3.61224, 3.60817, 3.61769, 3.60766, 3.59808, 3.59097, 3.58618, 3.57924, 3.55744, 3.5353, 3.54275, 3.52975, 3.52953, 3.52006, 3.50208, 3.51518, 3.50078, 3.50975, 3.52715, 3.54649, 3.54073, 3.53013, 3.53555], "type": "scatter", "mode": "lines", "name": "Rg\\sY\\N", "line": {"width": 2}}, {"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [3.5146, 3.52261, 3.51569, 3.51291, 3.53705, 3.50668, 3.51042, 3.50575, 3.52638, 3.51421, 3.5071, 3.52945, 3.5325, 3.53801, 3.5347, 3.54814, 3.57199, 3.58891, 3.59059, 3.61262, 3.62428, 3.61531, 3.61503, 3.61092, 3.60905, 3.5903, 3.54434, 3.51656, 3.52269, 3.5193, 3.51696, 3.51268, 3.49933, 3.51507, 3.49687, 3.49762, 3.51066, 3.52454, 3.53596, 3.56003, 3.55846, 3.55718, 3.56848, 3.57587, 3.59202, 3.58091, 3.58803, 3.62148, 3.62289, 3.61439, 3.60557, 3.61219, 3.61675, 3.60634, 3.60189, 3.59757, 3.61315, 3.63619, 3.62192, 3.62239, 3.62648, 3.62262, 3.62827, 3.60803, 3.59229, 3.58489, 3.58185, 3.57484, 3.57382, 3.56803, 3.57669, 3.56297, 3.57941, 3.5744, 3.58077, 3.59285, 3.58938, 3.59541, 3.59118, 3.57158, 3.568, 3.58436, 3.57367, 3.571, 3.56226, 3.5844, 3.59866, 3.58667, 3.60231, 3.60715, 3.60446, 3.59408, 3.58923, 3.57636, 3.57175, 3.56293, 3.54462, 3.53168, 3.53834, 3.53859, 3.53749, 3.53576, 3.52572, 3.5402, 3.54901, 3.54189, 3.53711, 3.54745, 3.55134, 3.52798, 3.53168, 3.51607, 3.4956, 3.52205, 3.53107, 3.53326, 3.52319, 3.50936, 3.51302, 3.51322, 3.48782, 3.48734, 3.46968, 3.45402, 3.46864, 3.46359, 3.48533, 3.4753, 3.47869, 3.48577, 3.49231, 3.4669, 3.45979, 3.47474, 3.47543, 3.48992, 3.48486, 3.48779, 3.48258, 3.4756, 3.48934, 3.49395, 3.49919, 3.5014, 3.51558, 3.51658, 3.5018, 3.4934, 3.51147, 3.52095, 3.52521, 3.53472, 3.53764, 3.53437, 3.55889, 3.54504, 3.5579, 3.55709, 3.57156, 3.56213, 3.54484, 3.5275], "type": "scatter", "mode": "lines", "name": "Rg\\sZ\\N", "line": {"width": 2}}], "layout": {"title": {"text": "Radius of gyration (total and around axes)", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "Rg (nm)"}, "hovermode": "x unified", "showlegend": true, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv1', plotData1.data, plotData1.layout, {responsive: true});
+
+        var plotData2 = {"data": [{"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [963.0, 891.0, 911.0, 925.0, 917.0, 918.0, 920.0, 924.0, 920.0, 907.0, 906.0, 907.0, 923.0, 906.0, 896.0, 898.0, 913.0, 905.0, 901.0, 909.0, 889.0, 885.0, 908.0, 891.0, 904.0, 898.0, 916.0, 896.0, 912.0, 894.0, 894.0, 923.0, 913.0, 908.0, 907.0, 917.0, 926.0, 900.0, 904.0, 897.0, 904.0, 918.0, 915.0, 922.0, 911.0, 911.0, 905.0, 906.0, 931.0, 929.0, 898.0, 916.0, 902.0, 917.0, 905.0, 894.0, 913.0, 914.0, 913.0, 929.0, 934.0, 907.0, 912.0, 931.0, 925.0, 912.0, 908.0, 913.0, 926.0, 922.0, 927.0, 930.0, 923.0, 919.0, 907.0, 934.0, 903.0, 924.0, 913.0, 917.0, 917.0, 921.0, 891.0, 904.0, 904.0, 891.0, 911.0, 914.0, 910.0, 918.0, 891.0, 906.0, 915.0, 913.0, 911.0, 917.0, 922.0, 922.0, 911.0, 927.0, 927.0, 919.0, 898.0, 921.0, 911.0, 905.0, 925.0, 911.0, 939.0, 934.0, 896.0, 932.0, 937.0, 905.0, 917.0, 916.0, 920.0, 934.0, 941.0, 948.0, 943.0, 929.0, 919.0, 933.0, 917.0, 933.0, 921.0, 914.0, 909.0, 925.0, 926.0, 922.0, 918.0, 889.0, 925.0, 951.0, 929.0, 916.0, 936.0, 925.0, 911.0, 935.0, 914.0, 925.0, 920.0, 921.0, 934.0, 944.0, 916.0, 904.0, 925.0, 943.0, 927.0, 915.0, 913.0, 911.0, 919.0, 911.0, 923.0, 910.0, 913.0, 922.0], "type": "scatter", "mode": "lines", "name": "Hydrogen bonds", "line": {"width": 2}}, {"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [5042.0, 5051.0, 5026.0, 5058.0, 4994.0, 4991.0, 4967.0, 5013.0, 5004.0, 5023.0, 5027.0, 5029.0, 5011.0, 5000.0, 4979.0, 5015.0, 5015.0, 5027.0, 4993.0, 4967.0, 5042.0, 5017.0, 5001.0, 4993.0, 5000.0, 4987.0, 4947.0, 5000.0, 4918.0, 5011.0, 4957.0, 5016.0, 5007.0, 4989.0, 4982.0, 5003.0, 4960.0, 4998.0, 4961.0, 4981.0, 5018.0, 5089.0, 5055.0, 4987.0, 5064.0, 5007.0, 4974.0, 4986.0, 4986.0, 5012.0, 5035.0, 5040.0, 4981.0, 5003.0, 5017.0, 4984.0, 5029.0, 4971.0, 4983.0, 5010.0, 5019.0, 4931.0, 4994.0, 4994.0, 5034.0, 5002.0, 4975.0, 5037.0, 5011.0, 4997.0, 4996.0, 4980.0, 5028.0, 5000.0, 4966.0, 4997.0, 5052.0, 4995.0, 4971.0, 5015.0, 5040.0, 5040.0, 4997.0, 4972.0, 5007.0, 5021.0, 5041.0, 5038.0, 4955.0, 4985.0, 5014.0, 5006.0, 5070.0, 4978.0, 5009.0, 5010.0, 5003.0, 5011.0, 5048.0, 5038.0, 4966.0, 5033.0, 4985.0, 5032.0, 5006.0, 5029.0, 4997.0, 4989.0, 4978.0, 4986.0, 5012.0, 4996.0, 5028.0, 4976.0, 5018.0, 4971.0, 5039.0, 5039.0, 5034.0, 4994.0, 4995.0, 5026.0, 5033.0, 4990.0, 4975.0, 5023.0, 4997.0, 4976.0, 5035.0, 4983.0, 4975.0, 5052.0, 4988.0, 5017.0, 4990.0, 4997.0, 4973.0, 5042.0, 5048.0, 5039.0, 5040.0, 5000.0, 5008.0, 5040.0, 5069.0, 5028.0, 5023.0, 5090.0, 5014.0, 5051.0, 5011.0, 5028.0, 4995.0, 5083.0, 5018.0, 5116.0, 5095.0, 5070.0, 5002.0, 5067.0, 5093.0, 5056.0], "type": "scatter", "mode": "lines", "name": "Pairs within 0.35 nm", "line": {"width": 2}}], "layout": {"title": {"text": "Hydrogen Bonds", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "Number"}, "hovermode": "x unified", "showlegend": true, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv2', plotData2.data, plotData2.layout, {responsive: true});
+
+        var plotData3 = {"data": [{"x": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 19.0, 20.0, 22.0, 23.0, 24.0, 25.0, 27.0, 28.0, 29.0, 31.0, 32.0, 33.0, 35.0, 36.0, 37.0, 39.0, 40.0, 41.0, 43.0, 44.0, 45.0, 46.0, 47.0, 49.0, 50.0, 51.0, 53.0, 54.0, 55.0, 56.0, 57.0, 59.0, 60.0, 61.0, 63.0, 64.0, 65.0, 66.0, 67.0, 69.0, 70.0, 71.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 80.0, 81.0, 82.0, 83.0, 84.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 93.0, 94.0, 96.0, 97.0, 98.0, 99.0, 101.0, 102.0, 103.0, 105.0, 106.0, 107.0, 109.0, 110.0, 111.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 120.0, 122.0, 123.0, 124.0, 125.0, 127.0, 128.0, 129.0, 131.0, 132.0, 133.0, 135.0, 136.0, 137.0, 138.0, 139.0, 141.0, 142.0, 143.0, 145.0, 146.0, 147.0, 149.0, 150.0, 151.0, 153.0, 154.0, 155.0, 156.0, 157.0, 159.0, 160.0, 161.0, 163.0, 164.0, 165.0, 166.0, 167.0, 169.0, 170.0, 171.0, 173.0, 174.0, 175.0, 176.0, 178.0, 179.0, 180.0, 182.0, 183.0, 184.0, 185.0, 186.0, 187.0, 189.0, 191.0, 192.0, 194.0, 195.0, 196.0, 197.0, 198.0, 200.0, 201.0, 202.0, 204.0, 205.0, 206.0, 207.0, 208.0, 210.0, 211.0, 212.0, 214.0, 215.0, 216.0, 217.0, 218.0, 219.0, 221.0, 223.0, 224.0, 225.0, 226.0, 228.0, 229.0, 230.0, 232.0, 233.0, 234.0, 235.0, 236.0, 238.0, 239.0, 240.0, 242.0, 243.0, 244.0, 246.0, 247.0, 248.0, 250.0, 251.0, 252.0, 253.0, 254.0, 256.0, 257.0, 258.0, 260.0, 261.0, 262.0, 263.0, 264.0, 266.0, 267.0, 268.0, 270.0, 271.0, 272.0, 273.0, 274.0, 275.0, 277.0, 278.0, 279.0, 281.0, 282.0, 283.0, 284.0, 286.0, 287.0, 288.0, 290.0, 291.0, 292.0, 293.0, 294.0, 296.0, 297.0, 298.0, 300.0, 301.0, 302.0, 303.0, 305.0, 306.0, 307.0, 309.0, 310.0, 311.0, 312.0, 313.0, 315.0, 316.0, 317.0, 319.0, 320.0, 321.0, 322.0, 323.0, 324.0, 326.0, 328.0, 329.0, 330.0, 331.0, 333.0, 334.0, 335.0, 337.0, 338.0, 339.0, 340.0, 341.0, 343.0, 344.0, 345.0, 347.0, 348.0, 349.0, 350.0, 351.0, 353.0, 354.0, 355.0, 357.0, 358.0, 359.0, 360.0, 361.0, 362.0, 364.0, 365.0, 366.0, 368.0, 369.0, 370.0, 371.0, 373.0, 374.0, 375.0, 377.0, 378.0, 379.0, 380.0, 381.0, 382.0, 384.0, 386.0, 387.0, 388.0, 389.0, 391.0, 392.0, 393.0, 395.0, 396.0, 397.0, 399.0, 400.0, 401.0, 402.0, 403.0, 405.0, 406.0, 407.0, 409.0, 410.0, 411.0, 412.0, 413.0, 415.0, 416.0, 417.0, 419.0, 420.0, 421.0, 422.0, 423.0, 425.0, 426.0, 427.0, 429.0, 430.0, 431.0, 432.0, 433.0, 435.0, 436.0, 437.0, 439.0, 440.0, 441.0, 442.0, 444.0, 445.0, 446.0, 448.0, 449.0, 450.0, 451.0, 452.0, 454.0, 455.0, 456.0, 458.0, 459.0, 460.0, 461.0, 463.0, 464.0, 465.0, 467.0, 468.0, 469.0, 470.0, 471.0, 472.0, 474.0, 475.0, 476.0, 478.0, 479.0, 480.0, 481.0, 483.0, 484.0, 485.0, 487.0, 488.0, 489.0, 490.0, 491.0, 493.0, 494.0, 495.0, 497.0, 498.0, 499.0, 500.0, 502.0, 503.0, 504.0, 506.0, 507.0, 508.0, 509.0, 510.0, 511.0, 513.0, 515.0, 516.0, 518.0, 519.0, 520.0, 521.0, 522.0, 523.0, 524.0, 526.0, 527.0, 528.0, 530.0, 531.0, 532.0, 533.0, 535.0, 536.0, 537.0, 539.0, 540.0, 541.0, 542.0, 543.0, 544.0, 546.0, 548.0, 549.0, 550.0, 551.0, 553.0, 554.0, 555.0, 557.0, 558.0, 559.0, 561.0, 562.0, 563.0, 564.0, 565.0, 567.0, 568.0, 569.0, 571.0, 572.0, 573.0, 574.0, 575.0, 577.0, 578.0, 579.0, 581.0, 582.0, 583.0, 584.0, 585.0, 587.0, 588.0, 589.0, 591.0, 592.0, 593.0, 594.0, 595.0, 597.0, 598.0, 599.0, 601.0, 602.0, 603.0, 604.0, 606.0, 607.0, 608.0, 610.0, 611.0, 612.0, 613.0, 614.0, 616.0, 617.0, 618.0, 620.0, 621.0, 622.0, 623.0, 624.0, 625.0, 627.0, 629.0, 630.0, 631.0, 632.0, 634.0, 635.0, 636.0, 638.0, 639.0, 640.0, 641.0, 642.0, 644.0, 645.0, 646.0, 648.0, 649.0, 650.0, 651.0, 652.0, 654.0, 655.0, 656.0, 658.0, 659.0, 660.0, 661.0, 662.0, 663.0, 665.0, 666.0, 667.0, 669.0, 670.0, 671.0, 672.0, 674.0, 675.0, 676.0, 678.0, 679.0, 680.0, 681.0, 682.0, 683.0, 685.0, 687.0, 688.0, 689.0, 690.0, 692.0, 693.0, 694.0, 696.0, 697.0, 698.0, 700.0, 701.0, 702.0, 703.0, 704.0, 706.0, 707.0, 708.0, 710.0, 711.0, 712.0, 713.0, 714.0, 716.0, 717.0, 718.0, 720.0, 721.0, 722.0, 723.0, 724.0, 726.0, 727.0, 728.0, 730.0, 731.0, 732.0, 733.0, 735.0, 736.0, 737.0, 739.0, 740.0, 741.0, 742.0, 743.0, 744.0, 746.0, 747.0, 748.0, 750.0, 751.0, 752.0, 753.0, 755.0, 756.0, 757.0, 759.0, 760.0, 761.0, 762.0, 763.0, 764.0, 766.0, 768.0, 769.0, 770.0, 771.0, 773.0, 774.0, 775.0, 777.0, 778.0, 779.0, 781.0, 782.0, 783.0, 784.0, 785.0, 787.0, 788.0, 789.0, 791.0, 792.0, 793.0, 794.0, 795.0, 797.0, 798.0, 799.0, 801.0, 802.0, 803.0, 804.0, 805.0, 807.0, 808.0, 809.0, 811.0, 812.0, 813.0, 814.0, 815.0, 817.0, 818.0, 819.0, 821.0, 822.0, 823.0, 824.0, 826.0, 827.0, 828.0, 830.0, 831.0, 832.0, 833.0, 834.0, 835.0, 837.0, 839.0, 840.0, 841.0, 842.0, 844.0, 845.0, 846.0, 848.0, 849.0, 850.0, 851.0, 852.0, 854.0, 855.0, 856.0, 858.0, 859.0, 860.0, 861.0, 862.0, 864.0, 865.0, 866.0, 868.0, 869.0, 870.0, 871.0, 872.0, 873.0, 875.0, 876.0, 877.0, 879.0, 880.0, 881.0, 882.0, 884.0, 885.0, 886.0, 888.0, 889.0, 890.0, 891.0, 892.0, 894.0, 895.0, 896.0, 898.0, 899.0, 900.0, 901.0, 903.0, 904.0, 905.0, 907.0, 908.0, 909.0, 910.0, 911.0, 913.0, 914.0, 915.0, 917.0, 918.0, 919.0, 920.0, 922.0, 923.0, 924.0, 926.0, 927.0, 928.0, 929.0, 930.0, 931.0, 933.0, 934.0, 935.0, 937.0, 938.0, 939.0, 940.0, 942.0, 943.0, 944.0, 946.0, 947.0, 948.0, 949.0, 951.0, 952.0, 953.0, 955.0, 956.0, 957.0, 958.0, 959.0, 960.0, 962.0, 963.0, 964.0, 966.0, 967.0, 968.0, 969.0, 971.0, 972.0, 973.0, 975.0, 976.0, 977.0, 978.0, 979.0, 981.0, 982.0, 983.0, 985.0, 986.0, 987.0, 988.0, 990.0, 991.0, 992.0, 994.0, 995.0, 996.0, 997.0, 999.0, 1000.0, 1001.0, 1003.0, 1004.0, 1005.0, 1006.0, 1007.0, 1009.0, 1010.0, 1011.0, 1013.0, 1014.0, 1015.0, 1016.0, 1018.0, 1019.0, 1020.0, 1022.0, 1023.0, 1024.0, 1025.0, 1026.0, 1027.0, 1029.0, 1031.0, 1032.0, 1033.0, 1034.0, 1036.0, 1037.0, 1038.0, 1040.0, 1041.0, 1042.0, 1043.0, 1044.0, 1046.0, 1047.0, 1048.0, 1050.0, 1051.0, 1052.0, 1053.0, 1054.0, 1056.0, 1057.0, 1058.0, 1060.0, 1061.0, 1062.0, 1063.0, 1064.0, 1065.0, 1067.0, 1068.0, 1069.0, 1071.0, 1072.0, 1073.0, 1074.0, 1076.0, 1077.0, 1078.0, 1080.0, 1081.0, 1082.0, 1083.0, 1085.0, 1086.0, 1087.0, 1089.0, 1090.0, 1091.0, 1092.0, 1093.0, 1095.0, 1096.0, 1097.0, 1099.0, 1100.0, 1101.0, 1102.0, 1104.0, 1105.0, 1106.0, 1108.0, 1109.0, 1110.0, 1111.0, 1112.0, 1113.0, 1115.0, 1117.0, 1118.0, 1119.0, 1120.0, 1122.0, 1123.0, 1124.0, 1126.0, 1127.0, 1128.0, 1129.0, 1130.0, 1132.0, 1133.0, 1134.0, 1136.0, 1137.0, 1138.0, 1139.0, 1140.0, 1142.0, 1143.0, 1144.0, 1146.0, 1147.0, 1148.0, 1149.0, 1150.0, 1151.0, 1153.0, 1154.0, 1155.0, 1157.0, 1158.0, 1159.0, 1160.0, 1162.0, 1163.0, 1164.0, 1166.0, 1167.0, 1168.0, 1169.0, 1171.0, 1172.0, 1173.0, 1175.0, 1176.0, 1177.0, 1178.0, 1179.0, 1180.0, 1182.0, 1183.0, 1184.0, 1186.0, 1187.0, 1188.0, 1189.0, 1191.0, 1192.0, 1193.0, 1195.0, 1196.0, 1197.0, 1198.0, 1199.0, 1201.0, 1202.0, 1203.0, 1205.0, 1206.0, 1207.0, 1208.0, 1210.0, 1211.0, 1212.0, 1214.0, 1215.0, 1216.0, 1217.0, 1218.0, 1219.0, 1221.0, 1223.0, 1224.0, 1226.0, 1227.0, 1228.0, 1229.0, 1230.0, 1231.0, 1232.0, 1234.0, 1235.0, 1236.0, 1238.0, 1239.0, 1240.0, 1241.0, 1243.0, 1244.0, 1245.0, 1247.0, 1248.0, 1249.0, 1250.0, 1252.0, 1253.0, 1254.0, 1256.0, 1257.0, 1258.0, 1259.0, 1260.0, 1261.0, 1263.0, 1264.0, 1265.0, 1267.0, 1268.0, 1269.0, 1270.0, 1272.0, 1273.0, 1274.0, 1276.0, 1277.0, 1278.0, 1279.0, 1280.0, 1282.0, 1283.0, 1284.0, 1286.0, 1287.0, 1288.0, 1289.0, 1291.0, 1292.0, 1293.0, 1295.0, 1296.0, 1297.0, 1298.0, 1299.0, 1301.0, 1302.0, 1303.0, 1305.0, 1306.0, 1307.0, 1308.0, 1310.0, 1311.0, 1312.0, 1314.0, 1315.0, 1316.0, 1317.0, 1318.0, 1320.0], "y": [42350.335938, 42302.402344, 42148.179688, 41731.011719, 40707.429688, 38296.378906, 36934.492188, 35813.160156, 34495.660156, 32877.300781, 32158.378906, 31744.019531, 30799.355469, 30456.021484, 29703.078125, 29437.609375, 29060.507812, 27617.441406, 27280.830078, 26942.074219, 26582.064453, 26324.300781, 25968.738281, 25861.328125, 24962.179688, 24874.152344, 24653.757812, 24415.923828, 24186.236328, 24090.982422, 23638.769531, 23551.869141, 23386.806641, 23183.927734, 23010.943359, 22934.230469, 22630.039062, 22547.269531, 22319.841797, 22236.544922, 22136.455078, 21908.560547, 21801.9375, 21720.394531, 21549.505859, 21465.574219, 21316.871094, 21233.802734, 21163.830078, 20897.429688, 20823.119141, 20742.708984, 20627.832031, 20547.017578, 20444.703125, 20363.873047, 20314.539062, 20029.191406, 19978.71875, 19898.480469, 19819.382812, 19740.951172, 19668.169922, 19590.060547, 19523.744141, 19481.748047, 19110.964844, 19076.929688, 18879.904297, 18852.560547, 18765.423828, 18707.189453, 18640.992188, 18587.28125, 18525.871094, 18479.421875, 18414.96875, 18380.386719, 18330.847656, 18172.183594, 18097.279297, 18080.111328, 18033.277344, 17914.533203, 17861.304688, 17822.869141, 17761.408203, 17728.652344, 17696.146484, 17524.726562, 17498.208984, 17452.509766, 17412.554688, 17367.064453, 17331.033203, 17283.822266, 17252.996094, 17225.380859, 17117.664062, 17088.769531, 17028.396484, 16993.533203, 16971.888672, 16905.892578, 16884.613281, 16854.886719, 16803.728516, 16770.822266, 16750.794922, 16688.847656, 16668.853516, 16615.753906, 16597.007812, 16570.640625, 16511.929688, 16481.582031, 16461.5, 16414.621094, 16395.345703, 16372.160156, 16309.099609, 16282.655273, 16261.69043, 16221.693359, 16201.462891, 16162.420898, 16144.032227, 16123.164062, 16041.570312, 16017.436523, 15995.175781, 15963.013672, 15942.538086, 15909.053711, 15891.570312, 15872.550781, 15755.957031, 15734.290039, 15709.970703, 15683.717773, 15662.834961, 15634.15625, 15624.679688, 15525.788086, 15517.299805, 15489.526367, 15472.300781, 15443.757812, 15429.173828, 15398.421875, 15387.568359, 15369.250977, 15322.52832, 15304.295898, 15288.785156, 15261.701172, 15246.53418, 15219.603516, 15205.794922, 15191.439453, 15123.59375, 15106.686523, 15089.682617, 15067.329102, 15051.802734, 15028.311523, 15014.932617, 15001.691406, 14934.005859, 14919.838867, 14903.047852, 14883.514648, 14867.451172, 14847.541992, 14832.643555, 14812.033203, 14804.805664, 14755.978516, 14747.432617, 14715.523438, 14707.374023, 14692.703125, 14670.705078, 14653.905273, 14645.442383, 14614.007812, 14605.533203, 14578.691406, 14570.963867, 14557.609375, 14532.113281, 14516.464844, 14507.490234, 14482.738281, 14474.183594, 14462.216797, 14436.030273, 14422.131836, 14412.90332, 14390.108398, 14381.070312, 14359.738281, 14351.213867, 14340.249023, 14308.579102, 14295.670898, 14285.855469, 14266.801758, 14257.517578, 14238.576172, 14230.28125, 14220.060547, 14180.639648, 14168.647461, 14157.829102, 14141.671875, 14131.650391, 14115.013672, 14106.205078, 14088.664062, 14084.512695, 14025.847656, 14022.249023, 14006.009766, 13997.618164, 13980.685547, 13973.75, 13964.255859, 13916.878906, 13905.220703, 13895.149414, 13881.021484, 13872.286133, 13856.855469, 13849.982422, 13840.899414, 13775.052734, 13764.847656, 13753.539062, 13741.691406, 13731.723633, 13718.845703, 13714.303711, 13673.479492, 13669.566406, 13657.311523, 13648.512695, 13635.253906, 13628.056641, 13613.384766, 13610.235352, 13555.669922, 13553.033203, 13539.072266, 13532.583008, 13518.180664, 13512.875977, 13497.339844, 13493.679688, 13484.43457, 13466.886719, 13457.411133, 13445.202148, 13434.09082, 13429.636719, 13410.243164, 13405.837891, 13396.980469, 13384.751953, 13374.677734, 13365.53418, 13353.755859, 13350.129883, 13325.537109, 13322.238281, 13312.464844, 13303.563477, 13292.651367, 13285.62793, 13273.144531, 13270.431641, 13235.901367, 13233.546875, 13222.387695, 13215.910156, 13204.009766, 13198.734375, 13185.499023, 13182.164062, 13174.198242, 13132.540039, 13122.886719, 13115.382812, 13104.81543, 13099.063477, 13087.041016, 13084.699219, 13049.567383, 13047.952148, 13036.983398, 13031.754883, 13019.851562, 13015.977539, 13002.791016, 13000.890625, 12992.651367, 12975.561523, 12967.804688, 12957.123047, 12947.742188, 12944.03418, 12929.395508, 12926.144531, 12918.967773, 12907.676758, 12899.174805, 12895.1875, 12881.543945, 12877.691406, 12864.899414, 12861.728516, 12855.007812, 12840.490234, 12832.330078, 12827.902344, 12816.521484, 12812.515625, 12800.911133, 12797.72168, 12791.40332, 12772.073242, 12764.107422, 12759.25293, 12749.255859, 12744.955078, 12734.279297, 12731.107422, 12724.938477, 12696.736328, 12689.004883, 12683.287109, 12674.454102, 12669.875, 12659.921875, 12656.786133, 12650.634766, 12613.128906, 12606.407227, 12600.048828, 12592.407227, 12586.916016, 12578.4375, 12576.045898, 12549.881836, 12548.160156, 12539.65332, 12535.301758, 12526.211914, 12522.799805, 12512.728516, 12511.40332, 12481.829102, 12481.092773, 12472.236328, 12468.645508, 12459.112305, 12456.610352, 12451.094727, 12426.444336, 12419.389648, 12414.591797, 12406.613281, 12402.836914, 12393.902344, 12391.400391, 12381.013672, 12380.239258, 12346.126953, 12346.053711, 12336.941406, 12334.308594, 12324.578125, 12323.203125, 12317.341797, 12299.106445, 12291.986328, 12288.115234, 12280.051758, 12277.15625, 12268.045898, 12266.527344, 12260.946289, 12231.550781, 12224.692383, 12220.055664, 12212.830078, 12209.374023, 12201.054688, 12199.782227, 12178.160156, 12177.540039, 12170.179688, 12167.046875, 12158.869141, 12156.852539, 12147.541016, 12147.107422, 12141.160156, 12127.759766, 12122.447266, 12118.585938, 12111.571289, 12108.225586, 12100.689453, 12098.144531, 12089.788086, 12088.363281, 12083.283203, 12061.619141, 12055.216797, 12051.384766, 12044.489258, 12041.738281, 12033.808594, 12032.780273, 12009.697266, 12009.348633, 12002.226562, 11999.645508, 11991.994141, 11990.25, 11981.568359, 11981.233398, 11975.852539, 11966.172852, 11961.064453, 11955.330078, 11948.916992, 11947.116211, 11937.587891, 11936.176758, 11931.556641, 11925.201172, 11919.597656, 11917.494141, 11908.506836, 11906.621094, 11898.237305, 11896.898438, 11892.351562, 11884.361328, 11878.794922, 11876.450195, 11868.96875, 11866.911133, 11859.203125, 11857.892578, 11853.545898, 11842.732422, 11837.306641, 11834.592773, 11828.072266, 11825.776367, 11818.634766, 11817.237305, 11813.044922, 11797.183594, 11791.716797, 11788.580078, 11782.525391, 11780.248047, 11773.318359, 11771.996094, 11767.779297, 11746.083984, 11741.234375, 11737.59082, 11732.293945, 11729.307617, 11723.355469, 11722.106445, 11704.816406, 11704.255859, 11698.517578, 11696.151367, 11689.847656, 11688.266602, 11681.142578, 11680.732422, 11659.185547, 11659.078125, 11653.052734, 11651.09375, 11644.545898, 11643.4375, 11635.993164, 11636.003906, 11631.410156, 11624.374023, 11619.919922, 11615.69043, 11610.255859, 11608.959961, 11600.504883, 11599.506836, 11595.435547, 11590.924805, 11586.083008, 11583.183594, 11577.350586, 11576.413086, 11565.685547, 11565.134766, 11560.589844, 11557.553711, 11552.328125, 11550.261719, 11544.066406, 11543.552734, 11528.547852, 11528.330078, 11523.286133, 11521.126953, 11515.385742, 11514.082031, 11507.515625, 11507.257812, 11503.079102, 11484.914062, 11479.763672, 11477.136719, 11471.879883, 11470.268555, 11464.075195, 11463.730469, 11448.734375, 11448.90625, 11443.740234, 11441.966797, 11436.245117, 11435.391602, 11428.671875, 11429.09375, 11424.697266, 11416.512695, 11412.542969, 11408.293945, 11403.356445, 11402.171875, 11395.600586, 11394.646484, 11391.290039, 11386.145508, 11381.945312, 11380.394531, 11374.3125, 11373.095703, 11367.057617, 11366.317383, 11362.947266, 11356.168945, 11351.896484, 11350.081055, 11344.911133, 11343.46582, 11337.914062, 11337.151367, 11333.836914, 11324.295898, 11320.078125, 11318.071289, 11313.363281, 11311.803711, 11306.463867, 11305.806641, 11302.59668, 11287.40625, 11283.22168, 11280.833008, 11276.477539, 11274.841797, 11269.69043, 11269.201172, 11255.790039, 11255.564453, 11251.206055, 11249.55957, 11244.728516, 11243.741211, 11238.166016, 11238.029297, 11234.608398, 11221.359375, 11216.827148, 11214.957031, 11210.385742, 11209.319336, 11203.982422, 11203.708984, 11190.099609, 11190.235352, 11185.831055, 11184.546875, 11179.523438, 11179.041992, 11173.395508, 11173.704102, 11170.100586, 11164.240234, 11160.867188, 11157.628906, 11153.413086, 11152.509766, 11146.679688, 11146.160156, 11143.09668, 11139.604492, 11135.939453, 11134.825195, 11129.233398, 11128.402344, 11123.042969, 11122.592773, 11119.655273, 11115.121094, 11111.515625, 11110.259766, 11105.532227, 11104.676758, 11099.763672, 11099.374023, 11096.40625, 11090.341797, 11086.8125, 11085.329102, 11081.09375, 11080.048828, 11075.392578, 11074.948242, 11072.211914, 11063.453125, 11059.795898, 11058.233398, 11054.279297, 11053.259766, 11048.759766, 11048.412109, 11045.624023, 11034.214844, 11030.949219, 11029.005859, 11025.630859, 11024.110352, 11020.15332, 11019.75, 11008.206055, 11008.189453, 11004.523438, 11003.351562, 10999.224609, 10998.71582, 10993.890625, 10994.255859, 10991.225586, 10987.061523, 10984.30957, 10981.825195, 10978.495117, 10977.657227, 10972.320312, 10971.693359, 10969.175781, 10966.507812, 10963.509766, 10961.750977, 10958.206055, 10957.581055, 10950.890625, 10950.636719, 10947.767578, 10946.006836, 10942.672852, 10941.601562, 10937.615234, 10937.289062, 10929.248047, 10929.299805, 10926.175781, 10924.854492, 10921.259766, 10920.591797, 10916.313477, 10916.450195, 10913.681641, 10901.329102, 10898.027344, 10896.441406, 10893.382812, 10892.249023, 10888.644531, 10888.256836, 10879.707031, 10879.888672, 10876.65625, 10875.814453, 10872.039062, 10871.77832, 10867.413086, 10867.498047, 10853.873047, 10854.407227, 10850.751953, 10850.246094, 10846.224609, 10846.379883, 10843.963867, 10838.379883, 10835.28418, 10834.328125, 10831.001953, 10830.401367, 10826.577148, 10826.711914, 10824.25, 10815.724609, 10812.538086, 10811.389648, 10808.306641, 10807.759766, 10803.957031, 10804.007812, 10794.527344, 10794.868164, 10791.810547, 10791.145508, 10787.730469, 10787.555664, 10783.625, 10784.203125, 10781.65625, 10774.657227, 10771.233398, 10770.49707, 10767.236328, 10766.959961, 10763.166016, 10763.338867, 10753.575195, 10754.204102, 10751.09668, 10750.732422, 10747.229492, 10747.433594, 10745.275391, 10739.235352, 10736.43457, 10735.545898, 10732.600586, 10732.223633, 10728.871094, 10729.135742, 10724.860352, 10725.37793, 10713.523438, 10714.557617, 10711.18457, 10711.271484, 10707.520508, 10708.242188, 10705.810547, 10701.859375, 10698.844727, 10698.383789, 10695.291016, 10695.292969, 10691.646484, 10692.4375, 10690.025391, 10683.932617, 10680.842773, 10680.225586, 10677.348633, 10677.308594, 10673.797852, 10674.027344, 10665.571289, 10666.354492, 10663.603516, 10663.459961, 10660.160156, 10660.614258, 10658.585938, 10653.766602, 10651.09375, 10650.478516, 10647.81543, 10647.664062, 10644.488281, 10645.068359, 10642.964844, 10635.369141, 10632.673828, 10632.015625, 10629.392578, 10629.291992, 10626.136719, 10626.415039, 10619.664062, 10620.274414, 10617.77832, 10617.558594, 10614.679688, 10615.023438, 10611.563477, 10612.615234, 10610.361328, 10607.923828, 10605.908203, 10604.911133, 10602.375, 10602.293945, 10598.941406, 10599.201172, 10597.485352, 10596.234375, 10594.073242, 10593.619141, 10590.837891, 10591.013672, 10586.825195, 10587.368164, 10585.226562, 10584.663086, 10582.274414, 10582.347656, 10579.336914, 10579.65625, 10573.789062, 10574.425781, 10572.199219, 10571.986328, 10569.356445, 10569.730469, 10566.494141, 10567.597656, 10565.478516, 10561.091797, 10558.274414, 10558.035156, 10555.470703, 10555.938477, 10552.660156, 10553.143555, 10546.249023, 10547.092773, 10544.640625, 10544.873047, 10542.078125, 10542.763672, 10540.9375, 10537.927734, 10535.568359, 10535.303711, 10533.039062, 10533.203125, 10530.380859, 10531.188477, 10529.378906, 10524.890625, 10522.364258, 10522.151367, 10519.924805, 10520.191406, 10517.359375, 10517.750977, 10512.089844, 10512.864258, 10510.793945, 10510.856445, 10508.412109, 10509.004883, 10505.923828, 10507.230469, 10505.192383, 10503.568359, 10501.847656, 10501.298828, 10499.045898, 10499.196289, 10496.432617, 10496.832031, 10495.274414, 10494.645508, 10492.714844, 10492.625977, 10490.225586, 10490.488281, 10486.969727, 10487.587891, 10485.936523, 10485.672852, 10483.601562, 10483.886719, 10481.268555, 10481.682617, 10476.899414, 10477.717773, 10475.873047, 10475.875, 10473.586914, 10474.129883, 10471.361328, 10472.606445, 10470.685547, 10467.331055, 10464.716797, 10464.789062, 10462.581055, 10463.198242, 10460.419922, 10460.951172, 10455.774414, 10456.751953, 10454.757812, 10455.071289, 10452.641602, 10453.53125, 10451.921875, 10449.181641, 10447.058594, 10446.964844, 10445.009766, 10445.421875, 10443.005859, 10443.958008, 10440.81543, 10441.657227, 10435.335938, 10436.645508, 10434.489258, 10435.110352, 10432.506836, 10433.673828, 10431.922852, 10430.415039, 10428.121094, 10428.21875, 10426.143555, 10426.810547, 10424.144531, 10425.481445, 10423.705078, 10420.761719, 10418.338867, 10418.499023, 10416.44043, 10417.101562, 10414.451172, 10415.095703, 10410.62793, 10411.743164, 10409.921875, 10410.310547, 10408.103516, 10409.030273, 10406.192383, 10407.899414, 10405.889648, 10404.704102, 10403.086914, 10402.994141, 10401.342773, 10401.56543, 10399.603516, 10400.178711, 10397.808594, 10398.9375, 10397.34668, 10395.470703, 10393.214844, 10393.513672, 10391.438477, 10392.239258, 10389.680664, 10390.381836, 10385.482422, 10386.452148, 10384.713867, 10385.09375, 10382.999023, 10383.887695, 10382.475586, 10380.71582, 10378.71582, 10378.807617, 10377.091797, 10377.511719, 10375.379883, 10376.429688, 10373.631836, 10374.407227, 10368.96875, 10370.240234, 10368.283203, 10368.910156, 10366.617188, 10367.798828, 10366.228516, 10365.012695, 10362.925781, 10363.144531, 10361.307617, 10361.984375, 10359.645508, 10360.931641, 10359.348633, 10356.537109, 10354.391602, 10354.642578, 10352.785156, 10353.369141, 10351.068359, 10351.608398, 10348.076172, 10349.05957, 10347.431641, 10347.811523, 10345.848633, 10346.708984, 10344.148438, 10344.916992, 10339.630859, 10340.68457, 10338.9375, 10339.53125, 10337.360352, 10338.40625, 10336.972656, 10335.75, 10333.788086, 10334.041016, 10332.267578, 10332.858398, 10330.728516, 10331.77832, 10330.37207], "type": "scatter", "mode": "lines", "name": "Coul. recip.", "line": {"width": 2}}], "layout": {"title": {"text": "GROMACS Energies", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "(kJ/mol)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv3', plotData3.data, plotData3.layout, {responsive: true});
+
+        var plotData4 = {"data": [{"x": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0], "y": [-212.23674, -214.293243, -213.379288, -211.944717, -213.831314, -212.843292, -212.534164, -211.886337, -213.855057, -213.079437, -212.151993, -211.455444, -215.781952, -212.536667, -212.081161, -213.833359, -212.540268, -210.89183, -214.87352, -210.876663, -212.274445, -213.684677, -212.643143, -212.114365, -212.928207, -212.648102, -212.986786, -213.753845, -212.017532, -212.973129, -212.653152, -213.693756, -211.748795, -213.517242, -212.419403, -212.881073, -214.21846, -213.348907, -211.652695, -213.878967, -211.641479, -211.208099, -214.17424, -211.702805, -211.877258, -214.443573, -211.43779, -211.537491, -214.017014, -213.411728, -211.932007, -213.950409, -213.156326, -212.562668, -214.340881, -211.563751, -212.817642, -212.76738, -212.501678, -213.356049, -212.417801, -211.427155, -215.537598, -212.595093, -212.11174, -213.377106, -212.787521, -211.653427, -213.079865, -213.152298, -212.065155, -212.409668, -213.704926, -212.694046, -213.759796, -212.631088, -211.28331, -214.694427, -213.276276, -210.780685, -213.837448, -211.529266, -211.722092, -215.183884, -211.683136, -211.378998, -214.111343, -211.857666, -212.679764, -213.018356, -213.019562, -212.113937, -213.10585, -212.424423, -213.804062, -212.702637, -212.922989, -211.392349, -212.98645, -214.244324, -211.634598], "type": "scatter", "mode": "lines", "name": "Pres. DC", "line": {"width": 2}}], "layout": {"title": {"text": "GROMACS Energies", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "(bar)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv4', plotData4.data, plotData4.layout, {responsive: true});
+
+        var plotData5 = {"data": [{"x": [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.5100001, 0.52, 0.53, 0.54, 0.55, 0.56, 0.5700001, 0.58, 0.59, 0.6, 0.61, 0.62, 0.6300001, 0.64, 0.65, 0.66, 0.67, 0.68, 0.6900001, 0.7, 0.71, 0.72, 0.73, 0.74, 0.7500001, 0.7600001, 0.77, 0.78, 0.79, 0.8, 0.8100001, 0.8200001, 0.83, 0.84, 0.85, 0.86, 0.8700001, 0.8800001, 0.89, 0.9, 0.91, 0.92, 0.9300001, 0.9400001, 0.95, 0.96, 0.97, 0.98, 0.9900001, 1.0, 1.01, 1.0200001, 1.0300001, 1.0400001, 1.0500001, 1.0600001, 1.0700001, 1.08, 1.09, 1.1, 1.11, 1.12, 1.13, 1.1400001, 1.1500001, 1.1600001, 1.1700001, 1.1800001, 1.1900001, 1.2, 1.21, 1.22, 1.23, 1.24, 1.25, 1.2600001, 1.2700001, 1.2800001, 1.2900001, 1.3000001, 1.3100001, 1.3200001, 1.33, 1.34, 1.35, 1.36, 1.3700001, 1.3800001, 1.3900001, 1.4000001, 1.4100001, 1.4200001, 1.4300001, 1.4400001, 1.45, 1.46, 1.47, 1.48, 1.4900001, 1.5000001, 1.5100001, 1.5200001, 1.5300001, 1.5400001, 1.5500001, 1.5600001, 1.5700001, 1.58, 1.59, 1.6, 1.6100001], "y": [0.0005007, 0.0994461, 0.1129333, 0.1234843, 0.135147, 0.1552297, 0.153009, 0.1457639, 0.1637968, 0.1852812, 0.1871527, 0.19256, 0.1908209, 0.1916993, 0.2032703, 0.1787441, 0.1852259, 0.1963939, 0.1786629, 0.1975075, 0.2073173, 0.2049011, 0.1862496, 0.1895487, 0.1825698, 0.1522524, 0.1704943, 0.1632433, 0.1503715, 0.1510953, 0.176176, 0.1889294, 0.1932223, 0.1809581, 0.1918525, 0.1886131, 0.1750465, 0.174759, 0.1699323, 0.1665646, 0.1759771, 0.1850173, 0.1809299, 0.1841812, 0.1644457, 0.151393, 0.1481107, 0.155051, 0.1487026, 0.1508593, 0.1443162, 0.1484602, 0.1617932, 0.1644919, 0.1708623, 0.1463671, 0.1526101, 0.1484407, 0.170834, 0.1634574, 0.1608873, 0.1686338, 0.1622495, 0.1624165, 0.1738812, 0.1961594, 0.2025999, 0.1881845, 0.1729307, 0.1584654, 0.1595374, 0.1526551, 0.1493097, 0.1372471, 0.1379912, 0.1376805, 0.1546594, 0.1689908, 0.1580968, 0.1560641, 0.1571638, 0.1678367, 0.1792172, 0.171723, 0.1690899, 0.170109, 0.1632751, 0.1750629, 0.1739274, 0.1766744, 0.1740047, 0.1940946, 0.1895853, 0.1692396, 0.1787858, 0.1885789, 0.1904297, 0.1578837, 0.1678117, 0.1612876, 0.1746033, 0.2004616, 0.2213005, 0.2302525, 0.2459196, 0.2107767, 0.21128, 0.1968638, 0.1638657, 0.17542, 0.1887531, 0.1946515, 0.2221825, 0.2062612, 0.1911514, 0.2176723, 0.2033611, 0.2135506, 0.2137251, 0.227955, 0.250812, 0.2607197, 0.2490769, 0.2469638, 0.2337222, 0.2229474, 0.2004113, 0.2140885, 0.211193, 0.1953517, 0.2149278, 0.2408652, 0.2365644, 0.2445062, 0.2467531, 0.2477003, 0.2302054, 0.2220656, 0.2086695, 0.1963742, 0.1870087, 0.1852017, 0.1801421, 0.1801084, 0.1817836, 0.2111996, 0.2180293, 0.2222155, 0.2392573, 0.2629075, 0.2557334, 0.2828559, 0.3082383, 0.3300472, 0.3565113, 0.3480215, 0.3564295, 0.3587284, 0.3592657, 0.3619853, 0.3559787, 0.3425794], "type": "scatter", "mode": "lines", "name": "Data", "line": {"width": 2}}], "layout": {"title": {"text": "Backbone after lsq fit to Backbone", "font": {"size": 20}}, "xaxis": {"title": "Time (ns)"}, "yaxis": {"title": "RMSD (nm)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv5', plotData5.data, plotData5.layout, {responsive: true});
+
+        var plotData6 = {"data": [{"x": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0, 121.0, 122.0, 123.0, 124.0, 125.0, 126.0, 127.0, 128.0, 129.0, 130.0, 131.0, 132.0, 133.0, 134.0, 135.0, 136.0, 137.0, 138.0, 139.0, 140.0, 141.0, 142.0, 143.0, 144.0, 145.0, 146.0, 147.0, 148.0, 149.0, 150.0, 151.0, 152.0, 153.0, 154.0, 155.0, 156.0, 157.0, 158.0, 159.0, 160.0, 161.0, 162.0, 163.0, 164.0, 165.0, 166.0, 167.0, 168.0, 169.0, 170.0, 171.0, 172.0, 173.0, 174.0, 175.0, 176.0, 177.0, 178.0, 179.0, 180.0, 181.0, 182.0, 183.0, 184.0, 185.0, 186.0, 187.0, 188.0, 189.0, 190.0, 191.0, 192.0, 193.0, 194.0, 195.0, 196.0, 197.0, 198.0, 199.0, 200.0, 201.0, 202.0, 203.0, 204.0, 205.0, 206.0, 207.0, 208.0, 209.0, 210.0, 211.0, 212.0, 213.0, 214.0, 215.0, 216.0, 217.0, 218.0, 219.0, 220.0, 221.0, 222.0, 223.0, 224.0, 225.0, 226.0, 227.0, 228.0, 229.0, 230.0, 231.0, 232.0, 233.0, 234.0, 235.0, 236.0, 237.0, 238.0, 239.0, 240.0, 241.0, 242.0, 243.0, 244.0, 245.0, 246.0, 247.0, 248.0, 249.0, 250.0, 251.0, 252.0, 253.0, 254.0, 255.0, 256.0, 257.0, 258.0, 259.0, 260.0, 261.0, 262.0, 263.0, 264.0, 265.0, 266.0, 267.0, 268.0, 269.0, 270.0, 271.0, 272.0, 273.0, 274.0, 275.0, 276.0, 277.0, 278.0, 279.0, 280.0, 281.0, 282.0, 283.0, 284.0, 285.0, 286.0, 287.0, 288.0, 289.0, 290.0, 291.0, 292.0, 293.0, 294.0, 295.0, 296.0, 297.0, 298.0, 299.0, 300.0, 301.0, 302.0, 303.0, 304.0, 305.0, 306.0, 307.0, 308.0, 309.0, 310.0, 311.0, 312.0, 313.0, 314.0, 315.0, 316.0, 317.0, 318.0, 319.0, 320.0, 321.0, 322.0, 323.0, 324.0, 325.0, 326.0, 327.0, 328.0, 329.0, 330.0, 331.0, 332.0, 333.0, 334.0, 335.0, 336.0, 337.0, 338.0, 339.0, 340.0, 341.0, 342.0, 343.0, 344.0, 345.0, 346.0, 347.0, 348.0, 349.0, 350.0, 351.0, 352.0, 353.0, 354.0, 355.0, 356.0, 357.0, 358.0, 359.0, 360.0, 361.0, 362.0, 363.0, 364.0, 365.0, 366.0, 367.0, 368.0, 369.0, 370.0, 371.0, 372.0, 373.0, 374.0, 375.0, 376.0, 377.0, 378.0, 379.0, 380.0, 381.0, 382.0, 383.0, 384.0, 385.0, 386.0, 387.0, 388.0, 389.0, 390.0, 391.0, 392.0, 393.0, 394.0, 395.0, 396.0, 397.0, 398.0, 399.0, 400.0, 401.0, 402.0, 403.0, 404.0, 405.0, 406.0, 407.0, 408.0, 409.0, 410.0, 411.0, 412.0, 413.0, 414.0, 415.0, 416.0, 417.0, 418.0, 419.0, 420.0, 421.0, 422.0, 423.0, 424.0, 425.0, 426.0, 427.0, 428.0, 429.0, 430.0, 431.0, 432.0, 433.0, 434.0, 435.0, 436.0, 437.0, 438.0, 439.0, 440.0, 441.0, 442.0, 443.0, 444.0, 445.0, 446.0, 447.0, 448.0, 449.0, 450.0, 451.0, 452.0, 453.0, 454.0, 455.0, 456.0, 457.0, 458.0, 459.0, 460.0, 461.0, 462.0, 463.0, 464.0, 465.0, 466.0, 467.0, 468.0, 469.0, 470.0, 471.0, 472.0, 473.0, 474.0, 475.0, 476.0, 477.0, 478.0, 479.0, 480.0, 481.0, 482.0, 483.0, 484.0, 485.0, 486.0, 487.0, 488.0, 489.0, 490.0, 491.0, 492.0, 493.0, 494.0, 495.0, 496.0, 497.0, 498.0, 499.0, 500.0, 501.0, 502.0, 503.0, 504.0, 505.0, 506.0, 507.0, 508.0, 509.0, 510.0, 511.0, 512.0, 513.0, 514.0, 515.0, 516.0, 517.0, 518.0, 519.0, 520.0, 521.0, 522.0, 523.0, 524.0, 525.0, 526.0, 527.0, 528.0, 529.0, 530.0, 531.0, 532.0, 533.0, 534.0, 535.0, 536.0, 537.0, 538.0, 539.0, 540.0, 541.0, 542.0, 543.0, 544.0, 545.0, 546.0, 547.0, 548.0, 549.0, 550.0, 551.0, 552.0, 553.0, 554.0, 555.0, 556.0, 557.0, 558.0, 559.0, 560.0, 561.0, 562.0, 563.0, 564.0, 565.0, 566.0, 567.0, 568.0, 569.0, 570.0, 571.0, 572.0, 573.0, 574.0, 575.0, 576.0, 577.0, 578.0, 579.0, 580.0, 581.0, 582.0, 583.0, 584.0, 585.0, 586.0, 587.0, 588.0, 589.0, 590.0, 591.0, 592.0, 593.0, 594.0, 595.0, 596.0, 597.0, 598.0, 599.0, 600.0, 601.0, 602.0, 603.0, 604.0, 605.0, 606.0, 607.0, 608.0, 609.0, 610.0, 611.0, 612.0, 613.0, 614.0, 615.0, 616.0, 617.0, 618.0, 619.0, 620.0, 621.0, 622.0, 623.0, 624.0, 625.0, 626.0, 627.0, 628.0, 629.0, 630.0, 631.0, 632.0, 633.0, 634.0, 635.0, 636.0, 637.0, 638.0, 639.0, 640.0, 641.0, 642.0, 643.0, 644.0, 645.0, 646.0, 647.0, 648.0, 649.0, 650.0, 651.0, 652.0, 653.0, 654.0, 655.0, 656.0, 657.0, 658.0, 659.0, 660.0, 661.0, 662.0, 663.0, 664.0, 665.0, 666.0, 667.0, 668.0, 669.0, 670.0, 671.0, 672.0, 673.0, 674.0, 675.0, 676.0, 677.0, 678.0, 679.0, 680.0, 681.0, 682.0, 683.0, 684.0, 685.0, 686.0, 687.0, 688.0, 689.0, 690.0, 691.0, 692.0, 693.0, 694.0, 695.0, 696.0, 697.0, 698.0, 699.0, 700.0, 701.0, 702.0, 703.0, 704.0, 705.0, 706.0, 707.0, 708.0, 709.0, 710.0, 711.0, 712.0, 713.0, 714.0, 715.0, 716.0, 717.0, 718.0, 719.0, 720.0, 721.0, 722.0, 723.0, 724.0, 725.0, 726.0, 727.0, 728.0, 729.0, 730.0, 731.0, 732.0, 733.0, 734.0, 735.0, 736.0, 737.0, 738.0, 739.0, 740.0, 741.0, 742.0, 743.0, 744.0, 745.0, 746.0, 747.0, 748.0, 749.0, 750.0, 751.0, 752.0, 753.0, 754.0, 755.0, 756.0, 757.0, 758.0, 759.0, 760.0, 761.0, 762.0, 763.0, 764.0, 765.0, 766.0, 767.0, 768.0, 769.0, 770.0, 771.0, 772.0, 773.0, 774.0, 775.0, 776.0, 777.0, 778.0, 779.0, 780.0, 781.0, 782.0, 783.0, 784.0, 785.0, 786.0, 787.0, 788.0, 789.0, 790.0, 791.0, 792.0, 793.0, 794.0, 795.0, 796.0, 797.0, 798.0, 799.0, 800.0, 801.0, 802.0, 803.0, 804.0, 805.0, 806.0, 807.0, 808.0, 809.0, 810.0, 811.0, 812.0, 813.0, 814.0, 815.0, 816.0, 817.0, 818.0, 819.0, 820.0, 821.0, 822.0, 823.0, 824.0, 825.0, 826.0, 827.0, 828.0, 829.0, 830.0, 831.0, 832.0, 833.0, 834.0, 835.0, 836.0, 837.0, 838.0, 839.0, 840.0, 841.0, 842.0, 843.0, 844.0, 845.0, 846.0, 847.0, 848.0, 849.0, 850.0, 851.0, 852.0, 853.0, 854.0, 855.0, 856.0, 857.0, 858.0, 859.0, 860.0, 861.0, 862.0, 863.0, 864.0, 865.0, 866.0, 867.0, 868.0, 869.0, 870.0, 871.0, 872.0, 873.0, 874.0, 875.0, 876.0, 877.0, 878.0, 879.0, 880.0, 881.0, 882.0, 883.0, 884.0, 885.0, 886.0, 887.0, 888.0, 889.0, 890.0, 891.0, 892.0, 893.0, 894.0, 895.0, 896.0, 897.0, 898.0, 899.0, 900.0, 901.0, 902.0, 903.0, 904.0, 905.0, 906.0, 907.0, 908.0, 909.0, 910.0, 911.0, 912.0, 913.0, 914.0, 915.0, 916.0, 917.0, 918.0, 919.0, 920.0, 921.0, 922.0, 923.0, 924.0, 925.0, 926.0, 927.0, 928.0, 929.0, 930.0, 931.0, 932.0, 933.0, 934.0, 935.0, 936.0, 937.0, 938.0, 939.0, 940.0, 941.0, 942.0, 943.0, 944.0, 945.0, 946.0, 947.0, 948.0, 949.0, 950.0, 951.0, 952.0, 953.0, 954.0, 955.0, 956.0, 957.0, 958.0, 959.0, 960.0, 961.0, 962.0, 963.0, 964.0, 965.0, 966.0, 967.0, 968.0, 969.0, 970.0, 971.0, 972.0, 973.0, 974.0, 975.0, 976.0, 977.0, 978.0, 979.0, 980.0, 981.0, 982.0, 983.0, 984.0, 985.0, 986.0, 987.0, 988.0, 989.0, 990.0, 991.0, 992.0, 993.0, 994.0, 995.0, 996.0, 997.0, 998.0, 999.0, 1000.0, 1001.0, 1002.0, 1003.0, 1004.0, 1005.0, 1006.0, 1007.0, 1008.0, 1009.0, 1010.0, 1011.0, 1012.0, 1013.0, 1014.0, 1015.0, 1016.0, 1017.0, 1018.0, 1019.0, 1020.0, 1021.0, 1022.0, 1023.0, 1024.0, 1025.0, 1026.0, 1027.0, 1028.0, 1029.0, 1030.0, 1031.0, 1032.0, 1033.0, 1034.0, 1035.0, 1036.0, 1037.0, 1038.0, 1039.0, 1040.0, 1041.0, 1042.0, 1043.0, 1044.0, 1045.0, 1046.0, 1047.0, 1048.0, 1049.0, 1050.0, 1051.0, 1052.0, 1053.0, 1054.0, 1055.0, 1056.0, 1057.0, 1058.0, 1059.0, 1060.0, 1061.0, 1062.0, 1063.0, 1064.0, 1065.0, 1066.0, 1067.0, 1068.0, 1069.0, 1070.0, 1071.0, 1072.0, 1073.0, 1074.0, 1075.0, 1076.0, 1077.0, 1078.0, 1079.0, 1080.0, 1081.0, 1082.0, 1083.0, 1084.0, 1085.0, 1086.0, 1087.0, 1088.0, 1089.0, 1090.0, 1091.0, 1092.0, 1093.0, 1094.0, 1095.0, 1096.0, 1097.0, 1098.0, 1099.0, 1100.0, 1101.0, 1102.0, 1103.0, 1104.0, 1105.0, 1106.0, 1107.0, 1108.0, 1109.0, 1110.0, 1111.0, 1112.0, 1113.0, 1114.0, 1115.0, 1116.0, 1117.0, 1118.0, 1119.0, 1120.0, 1121.0, 1122.0, 1123.0, 1124.0, 1125.0, 1126.0, 1127.0, 1128.0, 1129.0, 1130.0, 1131.0, 1132.0, 1133.0, 1134.0, 1135.0, 1136.0, 1137.0, 1138.0, 1139.0, 1140.0, 1141.0, 1142.0, 1143.0, 1144.0, 1145.0, 1146.0, 1147.0, 1148.0, 1149.0, 1150.0, 1151.0, 1152.0, 1153.0, 1154.0, 1155.0, 1156.0, 1157.0, 1158.0, 1159.0, 1160.0, 1161.0, 1162.0, 1163.0, 1164.0, 1165.0, 1166.0, 1167.0, 1168.0, 1169.0, 1170.0, 1171.0, 1172.0, 1173.0, 1174.0, 1175.0, 1176.0, 1177.0, 1178.0, 1179.0, 1180.0, 1181.0, 1182.0, 1183.0, 1184.0, 1185.0, 1186.0, 1187.0, 1188.0, 1189.0, 1190.0, 1191.0, 1192.0, 1193.0, 1194.0, 1195.0, 1196.0, 1197.0, 1198.0, 1199.0, 1200.0, 1201.0, 1202.0, 1203.0, 1204.0, 1205.0, 1206.0, 1207.0, 1208.0, 1209.0, 1210.0, 1211.0, 1212.0, 1213.0, 1214.0, 1215.0, 1216.0, 1217.0, 1218.0, 1219.0, 1220.0, 1221.0, 1222.0, 1223.0, 1224.0, 1225.0, 1226.0, 1227.0, 1228.0, 1229.0, 1230.0, 1231.0, 1232.0, 1233.0, 1234.0, 1235.0, 1236.0, 1237.0, 1238.0, 1239.0, 1240.0, 1241.0, 1242.0, 1243.0, 1244.0, 1245.0, 1246.0, 1247.0, 1248.0, 1249.0, 1250.0, 1251.0, 1252.0, 1253.0, 1254.0, 1255.0, 1256.0, 1257.0, 1258.0, 1259.0, 1260.0, 1261.0, 1262.0, 1263.0, 1264.0, 1265.0, 1266.0, 1267.0, 1268.0, 1269.0, 1270.0, 1271.0, 1272.0, 1273.0, 1274.0, 1275.0, 1276.0, 1277.0, 1278.0, 1279.0, 1280.0, 1281.0, 1282.0, 1283.0, 1284.0, 1285.0, 1286.0, 1287.0, 1288.0, 1289.0, 1290.0, 1291.0, 1292.0, 1293.0, 1294.0, 1295.0, 1296.0, 1297.0, 1298.0, 1299.0, 1300.0, 1301.0, 1302.0, 1303.0, 1304.0, 1305.0, 1306.0, 1307.0, 1308.0, 1309.0, 1310.0, 1311.0, 1312.0, 1313.0, 1314.0, 1315.0, 1316.0, 1317.0, 1318.0, 1319.0, 1320.0, 1321.0, 1322.0, 1323.0, 1324.0], "y": [0.182, 0.1736, 0.1689, 0.16, 0.1548, 0.1425, 0.1397, 0.1349, 0.1326, 0.1153, 0.1083, 0.0992, 0.0972, 0.0996, 0.102, 0.11, 0.1093, 0.1283, 0.1258, 0.1311, 0.131, 0.1399, 0.1477, 0.1654, 0.1716, 0.1872, 0.1978, 0.1926, 0.1839, 0.1928, 0.2109, 0.2334, 0.2258, 0.1937, 0.1792, 0.1654, 0.1531, 0.1366, 0.1245, 0.1142, 0.1053, 0.1023, 0.1161, 0.1616, 0.1833, 0.1388, 0.1202, 0.1109, 0.1078, 0.1184, 0.1198, 0.1331, 0.1466, 0.1591, 0.1543, 0.1553, 0.1558, 0.1434, 0.1468, 0.1627, 0.166, 0.151, 0.1502, 0.1493, 0.1233, 0.125, 0.138, 0.142, 0.1569, 0.1714, 0.1894, 0.1932, 0.1836, 0.1716, 0.1541, 0.1431, 0.1311, 0.1303, 0.1306, 0.1333, 0.1258, 0.1189, 0.1046, 0.1081, 0.109, 0.1072, 0.0977, 0.0956, 0.1013, 0.1103, 0.1181, 0.1315, 0.1371, 0.1516, 0.1616, 0.1764, 0.1845, 0.1755, 0.1693, 0.1611, 0.1503, 0.139, 0.1397, 0.1401, 0.1235, 0.1176, 0.1055, 0.0974, 0.0943, 0.0919, 0.091, 0.0829, 0.0864, 0.0778, 0.0792, 0.0799, 0.0868, 0.0921, 0.092, 0.0943, 0.099, 0.0982, 0.103, 0.1041, 0.1065, 0.1146, 0.1201, 0.112, 0.1257, 0.1439, 0.1473, 0.1423, 0.1393, 0.1329, 0.1172, 0.1113, 0.1052, 0.1041, 0.095, 0.0878, 0.089, 0.0841, 0.0761, 0.0737, 0.0785, 0.0849, 0.0893, 0.0937, 0.0987, 0.0995, 0.1021, 0.1208, 0.1302, 0.1363, 0.1541, 0.1627, 0.1635, 0.1499, 0.1518, 0.1536, 0.1621, 0.1587, 0.1365, 0.1272, 0.1225, 0.1147, 0.0997, 0.1019, 0.0989, 0.1012, 0.1039, 0.1149, 0.1022, 0.0863, 0.0872, 0.0839, 0.084, 0.0887, 0.0925, 0.1077, 0.1188, 0.1202, 0.1241, 0.1251, 0.1249, 0.1297, 0.1349, 0.1488, 0.1367, 0.1223, 0.1408, 0.1456, 0.1336, 0.1295, 0.1261, 0.1175, 0.1177, 0.1087, 0.1051, 0.0963, 0.0913, 0.0821, 0.0804, 0.0737, 0.0758, 0.0854, 0.0998, 0.1034, 0.0957, 0.1043, 0.105, 0.1137, 0.1123, 0.1193, 0.1222, 0.1401, 0.1978, 0.208, 0.2428, 0.1952, 0.1756, 0.156, 0.1541, 0.1446, 0.1484, 0.1562, 0.1495, 0.1466, 0.146, 0.1501, 0.1583, 0.16, 0.1684, 0.1698, 0.1634, 0.1552, 0.154, 0.1476, 0.1515, 0.1494, 0.158, 0.166, 0.1839, 0.1973, 0.1913, 0.1968, 0.186, 0.1963, 0.197, 0.1722, 0.165, 0.1512, 0.1451, 0.1395, 0.1306, 0.124, 0.1232, 0.1353, 0.1655, 0.1967, 0.1648, 0.1492, 0.1323, 0.1348, 0.14, 0.1463, 0.1508, 0.1641, 0.1581, 0.1698, 0.1789, 0.2, 0.2005, 0.1835, 0.1835, 0.1714, 0.1741, 0.1696, 0.1626, 0.1821, 0.1728, 0.1652, 0.1777, 0.1855, 0.1651, 0.1585, 0.163, 0.1633, 0.1698, 0.1694, 0.1904, 0.1923, 0.2116, 0.1964, 0.1809, 0.1647, 0.1583, 0.1617, 0.1569, 0.1578, 0.1537, 0.1639, 0.1686, 0.1548, 0.1478, 0.1569, 0.1517, 0.1406, 0.1328, 0.1253, 0.122, 0.1243, 0.125, 0.1332, 0.1366, 0.1483, 0.1539, 0.1704, 0.1883, 0.1952, 0.1773, 0.1673, 0.1602, 0.1477, 0.1376, 0.1424, 0.1444, 0.1332, 0.1324, 0.1363, 0.1287, 0.1306, 0.1311, 0.1317, 0.136, 0.1441, 0.1515, 0.1648, 0.161, 0.1754, 0.1709, 0.1623, 0.1526, 0.1341, 0.1287, 0.1132, 0.1093, 0.1036, 0.0981, 0.0967, 0.0966, 0.1032, 0.0997, 0.0961, 0.1057, 0.1148, 0.1178, 0.1006, 0.0952, 0.084, 0.0932, 0.0858, 0.0914, 0.1002, 0.1027, 0.1013, 0.1083, 0.129, 0.1327, 0.1368, 0.1452, 0.1506, 0.1365, 0.1295, 0.1248, 0.1226, 0.1116, 0.1123, 0.1048, 0.1182, 0.1402, 0.1298, 0.1169, 0.1014, 0.107, 0.1072, 0.1022, 0.0943, 0.0944, 0.1006, 0.1053, 0.1162, 0.1198, 0.1257, 0.1289, 0.1404, 0.1674, 0.1643, 0.1566, 0.1394, 0.1255, 0.1212, 0.1105, 0.0993, 0.0936, 0.0866, 0.0857, 0.087, 0.0902, 0.1015, 0.1166, 0.1092, 0.1004, 0.1157, 0.128, 0.1229, 0.1234, 0.1266, 0.1068, 0.112, 0.1094, 0.1205, 0.1205, 0.1379, 0.1436, 0.1777, 0.1839, 0.1734, 0.1901, 0.1686, 0.1583, 0.1377, 0.1312, 0.1256, 0.1172, 0.107, 0.108, 0.1155, 0.1206, 0.1209, 0.1237, 0.1284, 0.1339, 0.1306, 0.1295, 0.1312, 0.1363, 0.1725, 0.1763, 0.1737, 0.1404, 0.1081, 0.1195, 0.129, 0.1043, 0.0956, 0.0969, 0.088, 0.0806, 0.0804, 0.0811, 0.0887, 0.0858, 0.0895, 0.0924, 0.0952, 0.1073, 0.1283, 0.1531, 0.1678, 0.1711, 0.1499, 0.126, 0.1201, 0.1001, 0.0919, 0.0873, 0.079, 0.0759, 0.0759, 0.0813, 0.0837, 0.0931, 0.1047, 0.1244, 0.1506, 0.1697, 0.1578, 0.1604, 0.1258, 0.1011, 0.1011, 0.0903, 0.0949, 0.0912, 0.1004, 0.1065, 0.122, 0.1382, 0.1267, 0.1112, 0.1124, 0.1235, 0.1174, 0.1016, 0.1012, 0.0962, 0.0989, 0.1099, 0.1009, 0.1048, 0.1275, 0.1534, 0.1724, 0.1504, 0.1679, 0.1142, 0.0998, 0.087, 0.0803, 0.0766, 0.0805, 0.0858, 0.092, 0.099, 0.1014, 0.1232, 0.1445, 0.1385, 0.1275, 0.1182, 0.1369, 0.1343, 0.1349, 0.1201, 0.1118, 0.0997, 0.0941, 0.0834, 0.0888, 0.0889, 0.1032, 0.1085, 0.1284, 0.1429, 0.114, 0.1728, 0.1343, 0.1096, 0.0969, 0.097, 0.0961, 0.0977, 0.1004, 0.11, 0.122, 0.1185, 0.108, 0.1298, 0.1254, 0.1053, 0.0996, 0.1004, 0.1026, 0.1169, 0.1239, 0.1405, 0.1593, 0.1652, 0.1793, 0.1849, 0.1979, 0.2152, 0.218, 0.2167, 0.2278, 0.2432, 0.2456, 0.2472, 0.2249, 0.2153, 0.1882, 0.1743, 0.1589, 0.1415, 0.1291, 0.1176, 0.113, 0.1086, 0.0973, 0.0915, 0.0927, 0.0974, 0.0997, 0.0989, 0.1148, 0.1153, 0.1313, 0.1491, 0.1661, 0.1938, 0.2284, 0.2152, 0.1985, 0.1818, 0.1883, 0.1907, 0.1872, 0.1601, 0.1501, 0.1337, 0.1306, 0.1239, 0.1169, 0.1197, 0.1173, 0.1256, 0.1526, 0.1512, 0.1318, 0.109, 0.1061, 0.1115, 0.1171, 0.1293, 0.1367, 0.155, 0.1685, 0.1903, 0.206, 0.2302, 0.231, 0.2467, 0.2284, 0.2179, 0.247, 0.2485, 0.2352, 0.2185, 0.2002, 0.1762, 0.1541, 0.1367, 0.1263, 0.1103, 0.0991, 0.0905, 0.0904, 0.0965, 0.1065, 0.132, 0.1345, 0.1096, 0.1133, 0.1162, 0.1262, 0.1396, 0.1581, 0.1656, 0.1915, 0.2167, 0.2729, 0.2882, 0.2475, 0.2223, 0.1988, 0.1938, 0.1775, 0.1862, 0.1852, 0.1644, 0.156, 0.176, 0.1821, 0.1948, 0.2173, 0.2231, 0.2575, 0.2594, 0.2523, 0.2252, 0.2251, 0.2044, 0.2062, 0.1988, 0.2167, 0.2228, 0.2446, 0.2593, 0.2502, 0.2476, 0.2974, 0.3724, 0.4379, 0.3902, 0.3197, 0.2622, 0.2446, 0.2218, 0.2078, 0.1914, 0.1755, 0.162, 0.1438, 0.15, 0.1386, 0.1721, 0.1691, 0.1627, 0.1567, 0.1821, 0.2038, 0.2093, 0.2271, 0.2426, 0.2584, 0.2496, 0.282, 0.2731, 0.2609, 0.252, 0.2776, 0.2675, 0.2506, 0.2634, 0.2841, 0.263, 0.2404, 0.2538, 0.2549, 0.2726, 0.2764, 0.3061, 0.2962, 0.2514, 0.2419, 0.2336, 0.2332, 0.2234, 0.2317, 0.2291, 0.2601, 0.255, 0.2138, 0.2147, 0.1975, 0.1855, 0.1844, 0.1591, 0.1416, 0.1336, 0.1527, 0.153, 0.1746, 0.1837, 0.2056, 0.2403, 0.2444, 0.256, 0.2522, 0.2271, 0.21, 0.1849, 0.1679, 0.157, 0.1514, 0.1447, 0.1486, 0.1383, 0.155, 0.1664, 0.1807, 0.1977, 0.2116, 0.2261, 0.2112, 0.1964, 0.1863, 0.1645, 0.1518, 0.1366, 0.1232, 0.1201, 0.1072, 0.1179, 0.1185, 0.1151, 0.1328, 0.1337, 0.1264, 0.1483, 0.1705, 0.1695, 0.18, 0.1562, 0.1422, 0.1365, 0.125, 0.1106, 0.1161, 0.1085, 0.1235, 0.1289, 0.1484, 0.1561, 0.1713, 0.1732, 0.1468, 0.1648, 0.1627, 0.1684, 0.1563, 0.1755, 0.1642, 0.1758, 0.1766, 0.1916, 0.2065, 0.2133, 0.2077, 0.2014, 0.1925, 0.1876, 0.1704, 0.142, 0.131, 0.1169, 0.1075, 0.1084, 0.1073, 0.1173, 0.1356, 0.1496, 0.1697, 0.1929, 0.1863, 0.1688, 0.1565, 0.1325, 0.1159, 0.1119, 0.1084, 0.1165, 0.1181, 0.1378, 0.1501, 0.1729, 0.1962, 0.1789, 0.1956, 0.1906, 0.1743, 0.1905, 0.2046, 0.1873, 0.1772, 0.169, 0.158, 0.1593, 0.1535, 0.1711, 0.1694, 0.191, 0.1887, 0.2017, 0.2051, 0.2072, 0.2344, 0.2344, 0.208, 0.1884, 0.1746, 0.1544, 0.1543, 0.148, 0.1583, 0.156, 0.1735, 0.1637, 0.1468, 0.3383, 0.2978, 0.2665, 0.2382, 0.2244, 0.202, 0.1974, 0.1815, 0.1562, 0.1717, 0.1791, 0.2087, 0.2313, 0.2405, 0.2635, 0.2537, 0.2427, 0.2224, 0.2286, 0.2123, 0.2302, 0.2288, 0.2603, 0.2804, 0.3147, 0.3335, 0.3382, 0.3589, 0.3318, 0.3572, 0.3571, 0.313, 0.2836, 0.2532, 0.2241, 0.1978, 0.1687, 0.1521, 0.1315, 0.1418, 0.1596, 0.1829, 0.166, 0.1405, 0.1401, 0.1607, 0.1828, 0.2018, 0.226, 0.2482, 0.2779, 0.3104, 0.3236, 0.3576, 0.3643, 0.3366, 0.3291, 0.2962, 0.2687, 0.2521, 0.2305, 0.2489, 0.2325, 0.2299, 0.2584, 0.2816, 0.2511, 0.2384, 0.2607, 0.2616, 0.2897, 0.2938, 0.3151, 0.3399, 0.3586, 0.3262, 0.3093, 0.2782, 0.263, 0.2528, 0.2306, 0.238, 0.2245, 0.246, 0.2515, 0.2194, 0.2202, 0.1998, 0.1875, 0.1746, 0.1543, 0.135, 0.1282, 0.151, 0.1616, 0.1956, 0.2085, 0.2422, 0.2565, 0.2968, 0.3299, 0.3387, 0.3042, 0.2616, 0.2617, 0.2238, 0.2123, 0.2303, 0.2249, 0.1962, 0.1898, 0.1667, 0.1483, 0.1498, 0.1382, 0.1548, 0.1609, 0.1881, 0.2043, 0.2486, 0.2152, 0.2121, 0.1857, 0.1804, 0.164, 0.1359, 0.1326, 0.1098, 0.1053, 0.096, 0.0933, 0.1016, 0.1127, 0.1314, 0.1491, 0.1613, 0.1997, 0.1735, 0.1889, 0.1697, 0.1746, 0.1501, 0.1274, 0.1092, 0.0892, 0.0928, 0.0891, 0.0962, 0.1026, 0.121, 0.1466, 0.1435, 0.1522, 0.1487, 0.1322, 0.136, 0.1212, 0.1183, 0.1057, 0.1159, 0.1158, 0.1353, 0.1544, 0.1567, 0.1668, 0.1496, 0.1555, 0.1733, 0.1409, 0.1115, 0.1008, 0.0987, 0.0991, 0.1025, 0.1115, 0.1267, 0.1445, 0.1631, 0.2009, 0.2026, 0.1819, 0.1556, 0.1285, 0.1133, 0.0973, 0.0903, 0.0881, 0.0917, 0.1026, 0.1143, 0.1328, 0.1551, 0.1559, 0.1745, 0.1557, 0.1335, 0.141, 0.1578, 0.1395, 0.1323, 0.1107, 0.1087, 0.1019, 0.1129, 0.1156, 0.1372, 0.1447, 0.1747, 0.1832, 0.1931, 0.1998, 0.1704, 0.1534, 0.1336, 0.1184, 0.103, 0.1023, 0.0962, 0.1048, 0.1141, 0.1146, 0.1141, 0.1084, 0.1024, 0.1068, 0.1077, 0.1023, 0.0982, 0.1003, 0.1162, 0.1143, 0.1228, 0.1219, 0.1121, 0.1231, 0.1202, 0.1154, 0.1195, 0.1241, 0.1326, 0.1333, 0.1475, 0.1495, 0.1684, 0.1755, 0.1869, 0.2008, 0.2197, 0.2081, 0.2095, 0.2228, 0.2369, 0.2514, 0.2505, 0.2216, 0.2069, 0.1981, 0.1867, 0.1729, 0.1569, 0.1494, 0.1337, 0.1269, 0.1187, 0.1197, 0.1217, 0.1206, 0.1385, 0.1348, 0.1374, 0.1498, 0.1525, 0.1401, 0.1483, 0.1576, 0.1685, 0.1722, 0.1855, 0.1977, 0.213, 0.2138, 0.2125, 0.1964, 0.1961, 0.1954, 0.1963, 0.1826, 0.179, 0.1647, 0.1613, 0.1574, 0.1388, 0.1437, 0.1406, 0.1353, 0.1366, 0.1318, 0.131, 0.1209, 0.1225, 0.1252, 0.1344, 0.1424, 0.1559, 0.1692, 0.1858, 0.2004, 0.2147, 0.2332, 0.2247, 0.2405, 0.2351, 0.2148, 0.2279, 0.2422, 0.22, 0.2132, 0.1947, 0.184, 0.17, 0.1565, 0.1518, 0.1408, 0.1379, 0.1312, 0.1315, 0.1258, 0.1306, 0.1634, 0.1435, 0.144, 0.1386, 0.1483, 0.148, 0.1633, 0.1673, 0.1826, 0.1871, 0.1891, 0.2169, 0.2354, 0.2381, 0.2145, 0.2108, 0.2098, 0.1956, 0.194, 0.1919, 0.1876, 0.187, 0.1808, 0.1807, 0.1677, 0.1643, 0.1774, 0.1672, 0.1592, 0.1722, 0.1831, 0.1794, 0.1813, 0.1683, 0.1595, 0.1519, 0.1602, 0.158, 0.1669, 0.1666, 0.174, 0.1768, 0.1905, 0.1854, 0.187, 0.182, 0.1682, 0.1715, 0.1722, 0.1716, 0.1754, 0.1725, 0.1754, 0.1868, 0.1953, 0.2215, 0.2332, 0.2077, 0.1935, 0.1809, 0.1978, 0.18, 0.1551, 0.1438, 0.1456, 0.141, 0.1452, 0.1557, 0.1573, 0.1723, 0.1793, 0.195, 0.2174, 0.2068, 0.1877, 0.1728, 0.1662, 0.1626, 0.1521, 0.1518, 0.1477, 0.1546, 0.1534, 0.1688, 0.1811, 0.1856, 0.2055, 0.2026, 0.1931, 0.2099, 0.2272, 0.2374, 0.217, 0.2113, 0.1944, 0.1929, 0.1861, 0.1908, 0.1857, 0.1918, 0.1927, 0.206, 0.2163, 0.223, 0.2532, 0.2508, 0.2187, 0.2111, 0.2096, 0.2096, 0.2084, 0.2073, 0.1973, 0.2077, 0.2128, 0.2402], "type": "scatter", "mode": "lines", "name": "Data", "line": {"width": 2}}], "layout": {"title": {"text": "RMS fluctuation", "font": {"size": 20}}, "xaxis": {"title": "Residue"}, "yaxis": {"title": "(nm)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv6', plotData6.data, plotData6.layout, {responsive: true});
+
+        var plotData7 = {"data": [{"x": [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 410.0, 420.0, 430.0, 440.0, 450.0, 460.0, 470.0, 480.0, 490.0, 500.0, 510.0, 520.0, 530.0, 540.0, 550.0, 560.0, 570.0, 580.0, 590.0, 600.0, 610.0, 620.0, 630.0, 640.0, 650.0, 660.0, 670.0, 680.0, 690.0, 700.0, 710.0, 720.0, 730.0, 740.0, 750.0, 760.0, 770.0, 780.0, 790.0, 800.0, 810.0, 820.0, 830.0, 840.0, 850.0, 860.0, 870.0, 880.0, 890.0, 900.0, 910.0, 920.0, 930.0, 940.0, 950.0, 960.0, 970.0, 980.0, 990.0, 1000.0, 1010.0, 1020.0, 1030.0, 1040.0, 1050.0, 1060.0, 1070.0, 1080.0, 1090.0, 1100.0, 1110.0, 1120.0, 1130.0, 1140.0, 1150.0, 1160.0, 1170.0, 1180.0, 1190.0, 1200.0, 1210.0, 1220.0, 1230.0, 1240.0, 1250.0, 1260.0, 1270.0, 1280.0, 1290.0, 1300.0, 1310.0, 1320.0, 1330.0, 1340.0, 1350.0, 1360.0, 1370.0, 1380.0, 1390.0, 1400.0, 1410.0, 1420.0, 1430.0, 1440.0, 1450.0, 1460.0, 1470.0, 1480.0, 1490.0, 1500.0, 1510.0, 1520.0, 1530.0, 1540.0, 1550.0, 1560.0, 1570.0, 1580.0, 1590.0, 1600.0, 1610.0], "y": [638.496, 641.129, 641.474, 637.075, 639.527, 641.062, 639.777, 646.456, 641.968, 640.045, 639.278, 636.025, 641.236, 645.589, 642.588, 640.475, 648.57, 643.202, 644.137, 650.106, 639.099, 639.329, 641.373, 639.657, 640.598, 637.529, 643.21, 635.003, 639.163, 637.634, 640.855, 640.605, 634.211, 632.876, 637.712, 636.856, 635.517, 639.371, 634.801, 634.998, 634.966, 631.187, 632.159, 632.613, 633.372, 634.117, 631.355, 638.801, 637.022, 633.652, 635.352, 634.165, 636.995, 634.448, 632.332, 634.975, 633.584, 637.823, 642.023, 635.679, 639.843, 634.244, 631.892, 635.063, 635.194, 635.769, 644.714, 635.275, 638.866, 643.856, 639.525, 635.093, 640.023, 639.659, 641.221, 634.864, 637.176, 637.988, 638.529, 637.17, 636.049, 637.998, 634.676, 635.028, 636.433, 635.996, 634.121, 633.371, 637.001, 640.889, 642.09, 637.704, 632.69, 638.987, 640.88, 636.811, 633.467, 635.064, 633.56, 631.636, 637.38, 639.452, 640.349, 640.141, 641.947, 643.897, 640.328, 636.538, 641.951, 640.365, 643.319, 641.159, 637.468, 634.409, 633.187, 635.641, 631.141, 635.916, 637.154, 638.377, 639.766, 633.063, 637.655, 636.078, 639.728, 635.563, 632.681, 636.965, 632.918, 632.695, 635.972, 638.068, 644.035, 640.043, 635.84, 638.5, 638.865, 641.555, 639.464, 644.791, 639.179, 637.392, 636.95, 638.454, 634.107, 643.325, 636.646, 633.736, 638.673, 641.252, 639.451, 637.381, 643.0, 642.64, 644.107, 642.105, 637.922, 642.033, 643.349, 637.723, 633.787, 636.575], "type": "scatter", "mode": "lines", "name": "Total", "line": {"width": 2}}], "layout": {"title": {"text": "Solvent Accessible Surface", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "Area (nm\\S2\\N)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv7', plotData7.data, plotData7.layout, {responsive: true});
+
+        var plotData8 = {"data": [{"x": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0], "y": [-4396618.0, -4388645.0, -4388558.0, -4388559.0, -4388464.5, -4388412.0, -4388345.0, -4388257.5, -4388126.0, -4388100.0, -4388024.5, -4387982.5, -4387863.5, -4387787.0, -4387682.5, -4387704.0, -4387574.0, -4387607.0, -4387528.0, -4387379.0, -4387372.0, -4387256.0, -4387189.0, -4387128.0, -4387123.0, -4387021.5, -4387000.0, -4386926.0, -4386813.5, -4386801.5, -4386764.0, -4386609.5, -4386595.0, -4386563.5, -4386423.0, -4386437.5, -4386380.5, -4386257.5, -4386237.0, -4386176.5, -4386136.0, -4386060.5, -4385970.0, -4385901.0, -4385834.5, -4385807.5, -4385734.0, -4385676.5, -4385620.5, -4385535.0, -4385483.0, -4385411.0, -4385357.5, -4385313.0, -4385251.5, -4385125.5, -4385069.5, -4385006.0, -4385009.0, -4384950.5, -4384842.0, -4384821.0, -4384685.0, -4384669.5, -4384633.5, -4384537.0, -4384466.5, -4384355.0, -4384382.5, -4384292.0, -4384239.5, -4384204.5, -4384126.5, -4384120.0, -4384072.5, -4383931.0, -4383916.5, -4383830.0, -4383764.5, -4383724.5, -4383685.5, -4383557.0, -4383486.0, -4383385.5, -4383388.0, -4383366.0, -4383249.5, -4383191.5, -4383128.0, -4383152.5, -4383045.5, -4382983.5, -4382954.0, -4382826.0, -4382807.0, -4382742.5, -4382672.5, -4382585.0, -4382541.0, -4382459.0, -4382438.0], "type": "scatter", "mode": "lines", "name": "Conserved En.", "line": {"width": 2}}], "layout": {"title": {"text": "GROMACS Energies", "font": {"size": 20}}, "xaxis": {"title": "Time (ps)"}, "yaxis": {"title": "(kJ/mol)"}, "hovermode": "x unified", "showlegend": false, "height": 500, "template": "plotly_white"}};
+        Plotly.newPlot('plotDiv8', plotData8.data, plotData8.layout, {responsive: true});
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // Animate progress bars on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const progressBars = entry.target.querySelectorAll('.progress-fill');
+                    progressBars.forEach(bar => {
+                        bar.style.width = bar.style.width || '0%';
+                    });
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.score-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Requirements for the full-featured XVG visualization script
+numpy>=1.20.0
+plotly>=5.0.0
