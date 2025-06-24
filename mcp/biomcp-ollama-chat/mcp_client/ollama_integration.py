@@ -2,7 +2,7 @@ import re
 import json
 import httpx
 import asyncio
-from typing import Dict, Any, AsyncGenerator, Tuple, Optional
+from typing import Dict, Any, AsyncGenerator, Tuple, Optional, List
 import logging
 
 from .biomcp_client import BioMCPClient, ToolResult
@@ -28,43 +28,75 @@ class OllamaBioMCPIntegration:
         """Create system prompt with BioMCP tools context"""
         tools_context = self.biomcp_client.format_tools_for_llm(tools)
         
-        return f"""You are a helpful bioinformatics assistant with access to specialized tools through BioMCP.
+        # Load instructions and researcher prompts
+        import os
+        prompts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "prompts")
+        
+        instructions_prompt = ""
+        researcher_prompt = ""
+        
+        try:
+            with open(os.path.join(prompts_dir, "instructions.md"), 'r') as f:
+                instructions_prompt = f.read()
+        except FileNotFoundError:
+            pass
+            
+        try:
+            with open(os.path.join(prompts_dir, "researcher.md"), 'r') as f:
+                researcher_prompt = f.read()
+        except FileNotFoundError:
+            pass
+        
+        # Combine the prompts
+        combined_prompt = f"""{instructions_prompt}
 
-Available BioMCP Tools:
+{researcher_prompt}
+
+## Available BioMCP Tools:
 {tools_context}
 
-When users ask questions that could benefit from these tools:
-1. Identify which tool would be most helpful
-2. Gather any required parameters from the user if not provided
-3. Use the tool by responding with: TOOL_CALL: {{"tool": "tool_name", "parameters": {{"param1": "value1"}}}}
-4. Wait for the tool result and then interpret and explain it clearly
+## Tool Call Format
+Use this exact format for tool calls:
+tool_name: {{"parameter_name": "value"}}
 
-Important:
-- Always use tools when they would provide specific, accurate information
-- The TOOL_CALL must be valid JSON on a single line
-- Explain what you're doing before calling a tool
-- After receiving results, provide clear interpretation
-
-Be helpful and explain bioinformatics concepts clearly."""
+Examples:
+- article_searcher: {{"query": "BRAF V600E clinical implications"}}
+- variant_searcher: {{"query": "breast cancer"}}
+- trial_searcher: {{"query": "melanoma treatment"}}"""
+        
+        return combined_prompt
     
     def _extract_tool_calls(self, text: str) -> List[Tuple[str, Dict[str, Any]]]:
         """Extract tool calls from LLM response"""
         tool_calls = []
         
-        # Pattern to match TOOL_CALL: {json}
-        pattern = r'TOOL_CALL:\s*(\{[^}]+\})'
-        matches = re.finditer(pattern, text)
+        valid_tools = ["variant_details", "variant_searcher", "article_details", "article_searcher", "trial_searcher"]
         
-        for match in matches:
+        # Pattern to match tool_name: {json} (primary format)
+        pattern1 = r'(\w+):\s*(\{[^}]*\})'
+        for match in re.finditer(pattern1, text):
             try:
-                tool_json = json.loads(match.group(1))
-                tool_name = tool_json.get("tool")
-                parameters = tool_json.get("parameters", {})
+                tool_name = match.group(1).strip()
+                tool_json = json.loads(match.group(2))
                 
-                if tool_name:
-                    tool_calls.append((tool_name, parameters))
+                if tool_name in valid_tools:
+                    tool_calls.append((tool_name, tool_json))
             except json.JSONDecodeError:
-                logger.error(f"Failed to parse tool call JSON: {match.group(1)}")
+                logger.error(f"Failed to parse tool call JSON: {match.group(2)}")
+                continue
+        
+        # Pattern to match tool_name(param="value") (fallback format)
+        pattern2 = r'(\w+)\s*\(\s*(\w+)\s*=\s*["\']([^"\']*)["\']'
+        for match in re.finditer(pattern2, text):
+            try:
+                tool_name = match.group(1).strip()
+                param_name = match.group(2).strip()
+                param_value = match.group(3).strip()
+                
+                if tool_name in valid_tools:
+                    tool_calls.append((tool_name, {param_name: param_value}))
+            except Exception as e:
+                logger.error(f"Failed to parse function call format: {e}")
                 continue
         
         return tool_calls
@@ -81,13 +113,21 @@ Be helpful and explain bioinformatics concepts clearly."""
         conversation.append({"role": "system", "content": system_prompt})
         conversation.append({"role": "user", "content": user_message})
         
+        # Create a single prompt from the conversation
+        full_prompt = ""
+        for msg in conversation:
+            if msg["role"] == "system":
+                full_prompt += f"System: {msg['content']}\n\n"
+            elif msg["role"] == "user":
+                full_prompt += f"User: {msg['content']}\n\nAssistant: "
+        
         # Stream response from Ollama
         async with self.http_client.stream(
             "POST",
-            f"{self.ollama_host}/api/chat",
+            f"{self.ollama_host}/api/generate",
             json={
                 "model": self.model_name,
-                "messages": conversation,
+                "prompt": full_prompt,
                 "stream": True
             }
         ) as response:
@@ -97,18 +137,15 @@ Be helpful and explain bioinformatics concepts clearly."""
                 if line:
                     try:
                         chunk = json.loads(line)
-                        if "message" in chunk and "content" in chunk["message"]:
-                            content = chunk["message"]["content"]
+                        if "response" in chunk:
+                            content = chunk["response"]
                             accumulated_response += content
                             
                             # Check for tool calls in accumulated response
                             tool_calls = self._extract_tool_calls(accumulated_response)
                             
-                            if tool_calls and not chunk.get("done", False):
-                                # Don't yield the tool call syntax to user
-                                if "TOOL_CALL:" not in content:
-                                    yield {"type": "content", "content": content}
-                            else:
+                            # Always yield content, but filter out tool calls
+                            if not any(tool_name in content for tool_name in ["variant_details:", "variant_searcher:", "article_details:", "article_searcher:", "trial_searcher:"]):
                                 yield {"type": "content", "content": content}
                             
                             # If message is complete and contains tool calls, execute them
@@ -136,13 +173,16 @@ Be helpful and explain bioinformatics concepts clearly."""
                                             "content": f"Tool '{tool_name}' returned:\n\n{result.content}\n\nPlease interpret and explain these results."
                                         })
                                         
+                                        # Create interpretation prompt
+                                        interp_prompt = f"Tool '{tool_name}' returned this data:\n\n{result.content}\n\nPlease interpret and explain these results in a clear, helpful way:"
+                                        
                                         # Get interpretation from LLM
                                         async with self.http_client.stream(
                                             "POST",
-                                            f"{self.ollama_host}/api/chat",
+                                            f"{self.ollama_host}/api/generate",
                                             json={
                                                 "model": self.model_name,
-                                                "messages": conversation,
+                                                "prompt": interp_prompt,
                                                 "stream": True
                                             }
                                         ) as interp_response:
@@ -150,10 +190,10 @@ Be helpful and explain bioinformatics concepts clearly."""
                                                 if interp_line:
                                                     try:
                                                         interp_chunk = json.loads(interp_line)
-                                                        if "message" in interp_chunk and "content" in interp_chunk["message"]:
+                                                        if "response" in interp_chunk:
                                                             yield {
                                                                 "type": "interpretation",
-                                                                "content": interp_chunk["message"]["content"]
+                                                                "content": interp_chunk["response"]
                                                             }
                                                     except json.JSONDecodeError:
                                                         continue

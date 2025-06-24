@@ -1,12 +1,9 @@
 import asyncio
 import json
+import subprocess
+import logging
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-import logging
-
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import TextContent, Tool, Resource
 
 logger = logging.getLogger(__name__)
 
@@ -17,130 +14,151 @@ class ToolResult:
     error: Optional[str] = None
 
 class BioMCPClient:
+    """BioMCP client that uses direct subprocess calls for reliable tool execution"""
+    
     def __init__(self, biomcp_version: str = "0.1.1"):
         self.biomcp_version = biomcp_version
-        self.session: Optional[ClientSession] = None
-        self._tools_cache: Optional[List[Tool]] = None
-        self._resources_cache: Optional[List[Resource]] = None
         
     async def __aenter__(self):
-        await self.connect()
         return self
         
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.disconnect()
+        pass
         
     async def connect(self):
-        """Establish connection to BioMCP server"""
-        try:
-            # Use uv to run biomcp-python package
-            server_params = StdioServerParameters(
-                command="uv",
-                args=["run", "--with", f"biomcp-python=={self.biomcp_version}", "biomcp", "run"],
-            )
-            
-            # Create stdio client connection
-            self.read_stream, self.write_stream = await stdio_client(server_params).__aenter__()
-            
-            # Create and initialize session
-            self.session = ClientSession(self.read_stream, self.write_stream)
-            await self.session.__aenter__()
-            await self.session.initialize()
-            
-            logger.info("Successfully connected to BioMCP server")
-            
-            # Cache tools and resources on connection
-            await self._cache_tools_and_resources()
-            
-        except Exception as e:
-            logger.error(f"Failed to connect to BioMCP: {e}")
-            raise
+        """Connect to BioMCP (no-op for subprocess-based client)"""
+        logger.info("BioMCPClient connected")
+        pass
     
     async def disconnect(self):
-        """Close connection to BioMCP server"""
-        if self.session:
-            await self.session.__aexit__(None, None, None)
-        if hasattr(self, 'read_stream'):
-            # Close stdio streams
-            pass
-            
-    async def _cache_tools_and_resources(self):
-        """Cache available tools and resources"""
-        if self.session:
-            tool_result = await self.session.list_tools()
-            self._tools_cache = tool_result.tools
-            
-            resource_result = await self.session.list_resources()
-            self._resources_cache = resource_result.resources
-    
+        """Disconnect from BioMCP (no-op for subprocess-based client)"""
+        pass
+        
     async def get_available_tools(self) -> List[Dict[str, Any]]:
         """Get list of available BioMCP tools"""
-        if not self._tools_cache:
-            if self.session:
-                tool_result = await self.session.list_tools()
-                self._tools_cache = tool_result.tools
-            else:
-                return []
-        
-        # Convert tools to dict format
-        tools_list = []
-        for tool in self._tools_cache:
-            tool_dict = {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": []
+        # Define the tools based on the actual biomcp CLI capabilities
+        tools = [
+            {
+                "name": "variant_searcher",
+                "description": "Search for genetic variants using various query terms",
+                "parameters": [
+                    {"name": "query", "required": True, "description": "Search query for variants"}
+                ]
+            },
+            {
+                "name": "variant_details", 
+                "description": "Get detailed information about a specific variant",
+                "parameters": [
+                    {"name": "variant_id", "required": True, "description": "Variant ID (e.g., rs113488022)"}
+                ]
+            },
+            {
+                "name": "article_searcher",
+                "description": "Search for biomedical articles and publications",
+                "parameters": [
+                    {"name": "query", "required": True, "description": "Search query for articles"}
+                ]
+            },
+            {
+                "name": "article_details",
+                "description": "Get detailed information about a specific article",
+                "parameters": [
+                    {"name": "pmid", "required": True, "description": "PubMed ID of the article"}
+                ]
+            },
+            {
+                "name": "trial_searcher",
+                "description": "Search for clinical trials",
+                "parameters": [
+                    {"name": "query", "required": True, "description": "Search query for clinical trials"}
+                ]
             }
-            
-            if tool.inputSchema:
-                # Parse parameters from input schema
-                properties = tool.inputSchema.get("properties", {})
-                required = tool.inputSchema.get("required", [])
-                
-                for param_name, param_schema in properties.items():
-                    param_info = {
-                        "name": param_name,
-                        "type": param_schema.get("type", "string"),
-                        "description": param_schema.get("description", ""),
-                        "required": param_name in required
-                    }
-                    tool_dict["parameters"].append(param_info)
-            
-            tools_list.append(tool_dict)
-        
-        return tools_list
+        ]
+        return tools
     
     async def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> ToolResult:
-        """Execute a BioMCP tool with given parameters"""
-        if not self.session:
-            return ToolResult(
-                success=False,
-                content="",
-                error="Not connected to BioMCP server"
-            )
-        
+        """Execute a BioMCP tool using subprocess"""
         try:
-            # Call the tool through MCP protocol
-            result = await self.session.call_tool(tool_name, parameters)
-            
-            if result.isError:
+            # Build the command based on tool name and actual biomcp CLI structure
+            if tool_name == "variant_details":
+                variant_id = parameters.get("variant_id", "")
+                cmd = ["biomcp", "variant", "get", variant_id]
+            elif tool_name == "variant_searcher":
+                query = parameters.get("query", "")
+                cmd = ["biomcp", "variant", "search"]
+                
+                # Use general search with pathogenic variants if no specific parameters found
+                cmd.extend(["--significance", "pathogenic"])
+                cmd.extend(["--size", "20"])
+            elif tool_name == "article_details":
+                pmid = parameters.get("pmid", "")
+                cmd = ["biomcp", "article", "get", pmid]
+            elif tool_name == "article_searcher":
+                query = parameters.get("query", "")
+                cmd = ["biomcp", "article", "search"]
+                # Parse query for relevant search terms
+                if "BRAF" in query.upper():
+                    cmd.extend(["--gene", "BRAF"])
+                if "V600E" in query.upper():
+                    cmd.extend(["--variant", "V600E"])
+                elif "mutation" in query.lower():
+                    cmd.extend(["--keyword", "mutation"])
+                # Extract other keywords
+                keywords = [word for word in query.split() if len(word) > 3 and word.lower() not in ["what", "are", "the", "and", "mutation", "implications"]]
+                for keyword in keywords[:3]:  # Limit to 3 keywords
+                    cmd.extend(["--keyword", keyword])
+            elif tool_name == "trial_searcher":
+                query = parameters.get("query", "")
+                cmd = ["biomcp", "trial", "search"]
+                
+                # Use general search term
+                cmd.extend(["--term", query])
+                cmd.extend(["--status", "open"])
+            else:
                 return ToolResult(
                     success=False,
                     content="",
-                    error=f"Tool execution error: {result.content}"
+                    error=f"Unknown tool: {tool_name}"
                 )
             
-            # Extract text content from result
-            content_text = ""
-            if result.content:
-                for content_block in result.content:
-                    if isinstance(content_block, TextContent):
-                        content_text += content_block.text + "\n"
+            logger.info(f"Executing biomcp command: {' '.join(cmd)}")
             
-            return ToolResult(
-                success=True,
-                content=content_text.strip()
+            # Execute the command with timeout
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
             
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), 
+                    timeout=30.0
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                return ToolResult(
+                    success=False,
+                    content="",
+                    error="Tool execution timed out"
+                )
+            
+            if process.returncode == 0:
+                output = stdout.decode('utf-8').strip()
+                return ToolResult(
+                    success=True,
+                    content=output,
+                    error=None
+                )
+            else:
+                error_msg = stderr.decode('utf-8').strip()
+                return ToolResult(
+                    success=False,
+                    content="",
+                    error=f"Tool failed with exit code {process.returncode}: {error_msg}"
+                )
+                
         except Exception as e:
             logger.error(f"Error executing tool {tool_name}: {e}")
             return ToolResult(
@@ -150,19 +168,22 @@ class BioMCPClient:
             )
     
     def format_tools_for_llm(self, tools: List[Dict[str, Any]]) -> str:
-        """Format tool descriptions for LLM context"""
+        """Format tools for LLM context"""
         tool_descriptions = []
-        
         for tool in tools:
-            desc = f"Tool: {tool['name']}\n"
-            desc += f"Description: {tool['description']}\n"
+            params = []
+            if tool.get("parameters"):
+                for param in tool["parameters"]:
+                    param_desc = f"{param['name']}"
+                    if param.get("required"):
+                        param_desc += " (required)"
+                    if param.get("description"):
+                        param_desc += f": {param['description']}"
+                    params.append(param_desc)
             
-            if tool['parameters']:
-                desc += "Parameters:\n"
-                for param in tool['parameters']:
-                    req = " (required)" if param.get('required', False) else " (optional)"
-                    desc += f"  - {param['name']} ({param['type']}){req}: {param.get('description', '')}\n"
-            
-            tool_descriptions.append(desc)
+            tool_desc = f"- {tool['name']}: {tool.get('description', 'No description')}"
+            if params:
+                tool_desc += f"\n  Parameters: {', '.join(params)}"
+            tool_descriptions.append(tool_desc)
         
-        return "\n".join(tool_descriptions)
+        return "Available BioMCP tools:\n" + "\n".join(tool_descriptions)

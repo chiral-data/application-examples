@@ -4,12 +4,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkHealth();
     
     // Enable Enter key to send message
-    document.getElementById('user-input').addEventListener('keypress', (e) => {
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
+    
+    // Add click event for send button
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
 });
 
 async function checkHealth() {
@@ -28,7 +31,7 @@ async function loadTools() {
         const response = await fetch('/tools');
         const tools = await response.json();
         
-        const toolsList = document.getElementById('tools-list');
+        const toolsList = document.getElementById('toolsList');
         toolsList.innerHTML = '';
         
         if (tools.length === 0) {
@@ -57,19 +60,19 @@ async function loadTools() {
         });
     } catch (error) {
         console.error('Error loading tools:', error);
-        document.getElementById('tools-list').innerHTML = '<p class="error">Error loading tools</p>';
+        document.getElementById('toolsList').innerHTML = '<p class="error">Error loading tools</p>';
     }
 }
 
 async function sendMessage() {
-    const input = document.getElementById('user-input');
+    const input = document.getElementById('messageInput');
     const message = input.value.trim();
     
     if (!message) return;
     
     // Disable input while processing
     input.disabled = true;
-    document.getElementById('send-btn').disabled = true;
+    document.getElementById('sendButton').disabled = true;
     
     // Add user message to chat
     addMessage(message, 'user');
@@ -124,7 +127,8 @@ async function sendMessage() {
                                 break;
                                 
                             case 'tool_result':
-                                addToolResult(data.tool, data.result);
+                                // Don't show raw tool results, only show processing indicator
+                                addToolProcessing(data.tool);
                                 break;
                                 
                             case 'interpretation':
@@ -138,7 +142,7 @@ async function sendMessage() {
                         }
                         
                         // Auto-scroll to bottom
-                        const chatMessages = document.getElementById('chat-messages');
+                        const chatMessages = document.getElementById('messages');
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                         
                     } catch (e) {
@@ -153,13 +157,13 @@ async function sendMessage() {
     } finally {
         // Re-enable input
         input.disabled = false;
-        document.getElementById('send-btn').disabled = false;
+        document.getElementById('sendButton').disabled = false;
         input.focus();
     }
 }
 
 function addMessage(content, sender) {
-    const messagesContainer = document.getElementById('chat-messages');
+    const messagesContainer = document.getElementById('messages');
     const messageDiv = document.createElement('div');
     const messageId = `msg-${Date.now()}`;
     
@@ -174,29 +178,36 @@ function addMessage(content, sender) {
 }
 
 function addToolCall(toolName, parameters) {
-    const messagesContainer = document.getElementById('chat-messages');
+    const messagesContainer = document.getElementById('messages');
     const toolDiv = document.createElement('div');
     toolDiv.className = 'tool-call';
+    
+    // Extract just the query parameter for cleaner display
+    const query = parameters.query || JSON.stringify(parameters);
+    
     toolDiv.innerHTML = `
-        <div class="tool-header">🔧 Calling Tool: ${toolName}</div>
-        <div class="tool-params-display">${JSON.stringify(parameters, null, 2)}</div>
+        <div class="tool-header">🔧 Searching ${toolName.replace('_', ' ')}: "${query}"</div>
     `;
     messagesContainer.appendChild(toolDiv);
 }
 
-function addToolResult(toolName, result) {
-    const messagesContainer = document.getElementById('chat-messages');
-    const resultDiv = document.createElement('div');
-    resultDiv.className = 'tool-result';
-    resultDiv.innerHTML = `
-        <div class="tool-header">✅ Tool Result: ${toolName}</div>
-        <div class="tool-result-content">${formatMessage(result)}</div>
+function addToolProcessing(toolName) {
+    const messagesContainer = document.getElementById('messages');
+    const processingDiv = document.createElement('div');
+    processingDiv.className = 'tool-processing';
+    processingDiv.innerHTML = `
+        <div class="tool-header">⚡ Processing results from ${toolName.replace('_', ' ')}...</div>
     `;
-    messagesContainer.appendChild(resultDiv);
+    messagesContainer.appendChild(processingDiv);
+    
+    // Remove the processing indicator after a short delay
+    setTimeout(() => {
+        processingDiv.remove();
+    }, 1500);
 }
 
 function addToolError(toolName, error) {
-    const messagesContainer = document.getElementById('chat-messages');
+    const messagesContainer = document.getElementById('messages');
     const errorDiv = document.createElement('div');
     errorDiv.className = 'tool-error';
     errorDiv.innerHTML = `

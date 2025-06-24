@@ -4,19 +4,17 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama-service
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_HOST=0.0.0.0
     volumes:
       - ollama_data:/root/.ollama
     ports:
       - "11434:11434"
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     command: serve
 
   webapp:

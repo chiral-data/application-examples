@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy application files
 COPY webapp/ ./webapp/
@@ -18,6 +18,9 @@ COPY mcp_client/ ./mcp_client/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r webapp/requirements.txt
+
+# Install biomcp-python using uv
+RUN uv pip install --system biomcp-python==0.1.1
 
 EXPOSE 5000
 

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioMCP Chat with Ollama</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BioMCP Chat Interface</h1>
+            <p>Chat with Ollama using BioMCP tools for bioinformatics analysis</p>
+        </header>
+        
+        <div class="chat-container">
+            <div id="messages" class="messages"></div>
+            
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Ask about protein sequences, molecular structures, or bioinformatics analysis..."
+                    rows="3"
+                ></textarea>
+                <button id="sendButton">Send</button>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Available BioMCP Tools</h3>
+            <div id="toolsList" class="tools-list">Loading tools...</div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
