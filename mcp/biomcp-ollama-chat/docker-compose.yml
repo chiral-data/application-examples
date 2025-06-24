@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-service
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: serve
+
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.webapp
+    container_name: biomcp-webapp
+    ports:
+      - "${WEBAPP_PORT}:5000"
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      - BIOMCP_VERSION=${BIOMCP_VERSION}
+      - FLASK_ENV=production
+    depends_on:
+      - ollama
+    volumes:
+      - ./webapp:/app/webapp
+      - ./mcp_client:/app/mcp_client
+
+volumes:
+  ollama_data:
