@@ -10,12 +10,13 @@ services:
       - OLLAMA_HOST=0.0.0.0
     volumes:
       - ollama_data:/root/.ollama
+      - ./scripts/pull_models.sh:/pull_models.sh:ro
     ports:
       - "11434:11434"
     dns:
       - 8.8.8.8
       - 8.8.4.4
-    command: serve
+    entrypoint: ["/bin/bash", "/pull_models.sh"]
 
   webapp:
     build:

@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 from dotenv import load_dotenv
+import aiohttp
 
 from mcp_client.ollama_integration import OllamaBioMCPIntegration
 
@@ -21,17 +22,55 @@ app = Flask(__name__)
 
 # Configuration
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:latest')
+DEFAULT_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:4b')
 BIOMCP_VERSION = os.getenv('BIOMCP_VERSION', '0.1.1')
+
+# Available models (can be overridden by actual Ollama models)
+AVAILABLE_MODELS = [
+    "gemma3:4b",
+    "llama3.2:latest",
+    "deepseek-r1:14b",
+    "qwen3:8b"
+]
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/models', methods=['GET'])
+def get_models():
+    """Get available Ollama models"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    async def fetch_models():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{OLLAMA_HOST}/api/tags") as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = [model['name'] for model in data.get('models', [])]
+                        # If no models found, return our default list
+                        if not models:
+                            models = AVAILABLE_MODELS
+                        return {"models": models, "default": DEFAULT_MODEL}
+                    else:
+                        # Return default models if Ollama is not ready
+                        return {"models": AVAILABLE_MODELS, "default": DEFAULT_MODEL}
+        except Exception as e:
+            logger.error(f"Error fetching models: {e}")
+            return {"models": AVAILABLE_MODELS, "default": DEFAULT_MODEL}
+    
+    result = loop.run_until_complete(fetch_models())
+    loop.close()
+    
+    return jsonify(result)
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     message = data.get('message', '')
+    model = data.get('model', DEFAULT_MODEL)
     
     def generate():
         loop = asyncio.new_event_loop()
@@ -40,7 +79,7 @@ def chat():
         async def process():
             async with OllamaBioMCPIntegration(
                 OLLAMA_HOST, 
-                OLLAMA_MODEL, 
+                model, 
                 BIOMCP_VERSION
             ) as integration:
                 async for chunk in integration.process_message(message):
@@ -70,7 +109,7 @@ def get_tools():
     async def fetch_tools():
         async with OllamaBioMCPIntegration(
             OLLAMA_HOST, 
-            OLLAMA_MODEL, 
+            DEFAULT_MODEL, 
             BIOMCP_VERSION
         ) as integration:
             return await integration.biomcp_client.get_available_tools()
@@ -86,7 +125,7 @@ def health_check():
     return jsonify({
         "status": "healthy",
         "ollama_host": OLLAMA_HOST,
-        "model": OLLAMA_MODEL,
+        "default_model": DEFAULT_MODEL,
         "biomcp_version": BIOMCP_VERSION
     })
 

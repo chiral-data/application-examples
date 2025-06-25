@@ -34,6 +34,40 @@ header p {
     color: #7f8c8d;
 }
 
+.model-selector {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.model-selector label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.model-selector select {
+    padding: 8px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    min-width: 200px;
+}
+
+.model-selector select:hover {
+    border-color: #3498db;
+}
+
+.model-selector select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
 .chat-container {
     background: white;
     border-radius: 10px;

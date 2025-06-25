@@ -1,5 +1,6 @@
 // Load available tools on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadModels();
     await loadTools();
     await checkHealth();
     
@@ -13,7 +14,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Add click event for send button
     document.getElementById('sendButton').addEventListener('click', sendMessage);
+    
+    // Load saved model preference
+    const savedModel = localStorage.getItem('selectedModel');
+    if (savedModel) {
+        const modelSelect = document.getElementById('modelSelect');
+        // Will be set after models are loaded
+        modelSelect.dataset.savedModel = savedModel;
+    }
 });
+
+async function loadModels() {
+    try {
+        const response = await fetch('/models');
+        const data = await response.json();
+        
+        const modelSelect = document.getElementById('modelSelect');
+        modelSelect.innerHTML = '';
+        
+        // Add models to dropdown
+        data.models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            if (model === data.default || model === modelSelect.dataset.savedModel) {
+                option.selected = true;
+            }
+            modelSelect.appendChild(option);
+        });
+        
+        // Save model preference when changed
+        modelSelect.addEventListener('change', (e) => {
+            localStorage.setItem('selectedModel', e.target.value);
+        });
+        
+    } catch (error) {
+        console.error('Error loading models:', error);
+        const modelSelect = document.getElementById('modelSelect');
+        modelSelect.innerHTML = '<option value="">Error loading models</option>';
+    }
+}
 
 async function checkHealth() {
     try {
@@ -84,12 +124,16 @@ async function sendMessage() {
     const loadingId = addMessage('<div class="loading"></div>', 'assistant');
     
     try {
+        const selectedModel = document.getElementById('modelSelect').value;
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({ 
+                message: message,
+                model: selectedModel
+            })
         });
         
         const reader = response.body.getReader();
