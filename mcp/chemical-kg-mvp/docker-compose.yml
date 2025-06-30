@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Main application service
+  chem-kg-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chem-kg-mvp
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./temp:/app/temp
+      - vectorstore_data:/app/vectorstore
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+    env_file:
+      - .env
+    networks:
+      - chem-network
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # Ollama service with health check
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-service
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - chem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+
+  # Model initialization service
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: ollama-model-setup
+    networks:
+      - chem-network
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init-ollama.sh:/init-ollama.sh
+    entrypoint: ["/bin/bash", "/init-ollama.sh"]
+    environment:
+      - OLLAMA_HOST=ollama:11434
+
+networks:
+  chem-network:
+    driver: bridge
+
+volumes:
+  vectorstore_data:
+  ollama_data:
