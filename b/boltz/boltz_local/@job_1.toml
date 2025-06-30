@@ -1,0 +1,11 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+[infra_local]
+docker_image = "chiral.sakuracr.jp/boltz_dok_nvidia:latest"
+script = "job_4G6K_boltz.sh"

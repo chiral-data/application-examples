@@ -1,0 +1,13 @@
+[files]
+inputs = [
+]
+outputs = [
+]
+scripts = [
+]
+
+
+[infra_local]
+docker_image = "chiral.sakuracr.jp/lightdock_dok_python:latest"
+script = "job_4G6K lightdock.sh"
+
