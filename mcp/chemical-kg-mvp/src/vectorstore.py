@@ -1,5 +1,5 @@
-from langchain.embeddings import OllamaEmbeddings, HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_community.embeddings import OllamaEmbeddings, HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
 import re
@@ -42,7 +42,7 @@ class ChemicalVectorStore:
                 'page': chunk.get('page', -1),
                 'has_structures': len(chunk.get('structures', [])) > 0,
                 'structure_count': len(chunk.get('structures', [])),
-                'structure_smiles': [s['smiles'] for s in chunk.get('structures', [])]
+                'structure_smiles': ','.join([s['smiles'] for s in chunk.get('structures', [])])
             }
             metadatas.append(metadata)
             
@@ -103,12 +103,14 @@ class ChemicalVectorStore:
         
         if potential_smiles:
             # Find chunks with these SMILES
-            filter_dict = {
-                "structure_smiles": {"$in": potential_smiles}
-            }
-            results = self.vectorstore.similarity_search(
-                query, k=k, filter=filter_dict
-            )
+            # Since structure_smiles is now a comma-separated string, we need to search differently
+            for smiles in potential_smiles:
+                filter_results = self.vectorstore.similarity_search(
+                    query, 
+                    k=k,
+                    filter=lambda metadata: smiles in metadata.get("structure_smiles", "")
+                )
+                results.extend(filter_results)
         
         # If not enough results, do regular search
         if len(results) < k:

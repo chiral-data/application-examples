@@ -1,12 +1,14 @@
-from langchain.llms import Ollama
-from langchain.embeddings import OllamaEmbeddings
+from langchain_community.llms import Ollama
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import os
 
 class ChemicalRAG:
-    def __init__(self, vectorstore, model_name="mistral", streaming=True):
+    def __init__(self, vectorstore, model_name=None, streaming=True):
+        if model_name is None:
+            model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
         # Configure Ollama connection
         ollama_host = os.getenv("OLLAMA_HOST", "localhost")
         ollama_port = os.getenv("OLLAMA_PORT", "11434")
