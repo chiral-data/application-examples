@@ -21,8 +21,4 @@ cd swarm_0
 lgd_generate_conformations.py ../4G6K_rec.pdb ../4G6K_lig.pdb gso_100.out 200
 cd ..
 
-# Create results directory
-mkdir -p /lightdock_results
-cp -r ./swarm_0 /lightdock_results/
-
-ls /lightdock_results/
+echo "Docking completed. Results are available in results folder."

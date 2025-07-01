@@ -15,16 +15,9 @@ echo "Run boltz calculation ..."
 python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server --output_format pdb
 python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server --output_format pdb
 
-# Create results directory
 echo "Results for 4G6K_rec:"
 ls ./boltz_results_4G6K_rec/predictions/4G6K_rec/
 echo "Results for 4G6K_lig:"
 ls ./boltz_results_4G6K_lig/predictions/4G6K_lig/
-cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/4G6K_rec_model_0.pdb /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/confidence_4G6K_rec_model_0.json /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K_rec/predictions/4G6K_rec/plddt_4G6K_rec_model_0.npz /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/4G6K_lig_model_0.pdb /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/confidence_4G6K_lig_model_0.json /opt/artifact/boltz_results_4G6K/
-cp ./boltz_results_4G6K_lig/predictions/4G6K_lig/plddt_4G6K_lig_model_0.npz /opt/artifact/boltz_results_4G6K/
 
 echo "Prediction completed. Results are available in results folder."
