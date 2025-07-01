@@ -1,0 +1,56 @@
+# Use NVIDIA CUDA base image with Python
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BOLTZ_CACHE="/opt/boltz_cache"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-setuptools \
+    python3-dev \
+    git \
+    wget \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a symbolic link for python
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Create boltz cache directory
+RUN mkdir -p ${BOLTZ_CACHE}
+
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install Boltz-2 (latest version)
+RUN pip install --no-cache-dir boltz
+
+# Optional: Install specific Boltz-2 version when available
+# RUN pip install --no-cache-dir boltz==2.0.0
+
+# Install additional packages for Boltz-2
+RUN pip install --no-cache-dir tensorboard pytorch-lightning==2.5.0.post0
+
+# Pre-download Boltz-2 model weights to cache directory
+RUN cd ${BOLTZ_CACHE} && \
+    wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/boltz2_conf.ckpt && \
+    wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/boltz2_aff.ckpt && \
+    wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/mols.tar && \
+    tar -xf mols.tar && \
+    rm -f mols.tar
+
+# Create a working directory
+WORKDIR /workspace
+
+# Copy the launching script run.sh from the project folder @common
+COPY run_dok.sh /workspace/run_dok.sh
+RUN chmod +x /workspace/run_dok.sh
+
+ENTRYPOINT ["/bin/sh"]
