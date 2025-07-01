@@ -30,6 +30,7 @@ RUN pip install --no-cache-dir --upgrade pip
 
 # Install Boltz in a fresh environment
 RUN pip install --no-cache-dir boltz
+RUN pip install --no-cache-dir tensorboard pytorch-lightning==2.5.0.post0
 
 # Create a working directory
 WORKDIR /workspace
