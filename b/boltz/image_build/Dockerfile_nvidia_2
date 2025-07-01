@@ -1,22 +1,19 @@
 # Use NVIDIA CUDA base image with Python
-FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    BOLTZ_CACHE="/opt/boltz_cache" \
-    CUDA_LAUNCH_BLOCKING=1 \
-    TORCH_USE_CUDA_DSA=1 \
-    PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    BOLTZ_CACHE="/opt/boltz_cache"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y build-essential
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-dev \
+    python3 \
     python3-pip \
     python3-setuptools \
+    python3-dev \
     git \
     wget \
     curl \
@@ -24,37 +21,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a symbolic link for python
-RUN ln -sf /usr/bin/python3.10 /usr/bin/python
-RUN ln -sf /usr/bin/python3.10 /usr/bin/python3
+RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Create boltz cache directory
 RUN mkdir -p ${BOLTZ_CACHE}
 
 # Upgrade pip
-RUN python -m pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 
-# Method 1: Install Boltz first, then override with specific versions
+# Method 1: Install Boltz first, then fix dependencies
 RUN pip install --no-cache-dir boltz
 
-# Then force reinstall specific versions that work with V100
+# Force correct versions AFTER Boltz installation
 RUN pip install --no-cache-dir --force-reinstall \
-    torch==2.0.1+cu118 \
-    torchvision==0.15.2+cu118 \
-    torchaudio==2.0.2 \
-    --index-url https://download.pytorch.org/whl/cu118
+    "numpy>=2.0,<2.2" \
+    "numba>=0.59.0"
 
-# Force specific triton version
-RUN pip install --no-cache-dir --force-reinstall triton==2.0.0
+# Method 2 (Alternative): Use constraints file
+# Create constraints file
+# RUN echo "numpy<2.2" > /tmp/constraints.txt
+# RUN pip install --no-cache-dir -c /tmp/constraints.txt boltz
 
-# Update pytorch-lightning
-RUN pip install --no-cache-dir --force-reinstall pytorch-lightning==2.5.2
-
-# Method 2 (Alternative): Install Boltz without dependencies, then install all manually
+# Method 3 (Alternative): Install without deps then manually install
 # RUN pip install --no-cache-dir --no-deps boltz
-# Then install each dependency manually with specific versions
+# RUN pip install --no-cache-dir \
+#     "numpy>=2.0,<2.2" \
+#     "numba>=0.59.0" \
+#     torch torchvision \
+#     pytorch-lightning \
+#     # ... other dependencies
 
-# Install additional required packages
-RUN pip install --no-cache-dir tensorboard
+# Install additional packages
+RUN pip install --no-cache-dir tensorboard pytorch-lightning==2.5.2
+
+# Verify NumPy version
+RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
 
 # Pre-download Boltz-2 model weights to cache directory
 RUN cd ${BOLTZ_CACHE} && \
@@ -71,7 +72,12 @@ WORKDIR /workspace
 COPY run_dok.sh /workspace/run_dok.sh
 RUN chmod +x /workspace/run_dok.sh
 
-# Create a requirements file to lock versions
-RUN pip freeze > /opt/requirements.txt
+# Create a startup script that verifies dependencies
+RUN echo '#!/bin/bash\n\
+echo "Checking NumPy version..."\n\
+python -c "import numpy; assert numpy.__version__ < '\''2.2'\'', f'\''NumPy {numpy.__version__} is too new!'\''"\n\
+echo "NumPy version OK"\n\
+exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/sh"]
