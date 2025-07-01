@@ -7,8 +7,8 @@ echo "Downloading 4G6K.fasta ..."
 #wget https://www.rcsb.org/fasta/entry/4G6K -O 4G6K.fasta
 #sed -n '1,2p' 4G6K.fasta > 4G6K_rec.fasta
 #sed -n '3,4p' 4G6K.fasta > 4G6K_lig.fasta
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/input_antibody_antigen/4G6K_rec.fasta -O 4G6K_rec.fasta
-wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/input_antibody_antigen/4G6K_lig.fasta -O 4G6K_lig.fasta
+#wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/input_antibody_antigen/4G6K_rec.fasta -O 4G6K_rec.fasta
+#wget https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/input_antibody_antigen/4G6K_lig.fasta -O 4G6K_lig.fasta
 
 # Run 
 echo "Run boltz calculation ..."
