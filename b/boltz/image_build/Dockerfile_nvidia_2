@@ -36,7 +36,7 @@ RUN pip install --no-cache-dir boltz
 # RUN pip install --no-cache-dir boltz==2.0.0
 
 # Install additional packages for Boltz-2
-RUN pip install --no-cache-dir tensorboard pytorch-lightning==2.5.0.post0
+RUN pip install --no-cache-dir tensorboard pytorch-lightning==2.5.2
 
 # Pre-download Boltz-2 model weights to cache directory
 RUN cd ${BOLTZ_CACHE} && \
