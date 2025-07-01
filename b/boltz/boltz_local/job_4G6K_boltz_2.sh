@@ -12,8 +12,8 @@ echo "Downloading 4G6K.fasta ..."
 
 # Run 
 echo "Run boltz calculation ..."
-python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server --output_format pdb --no_trifast
-python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server --output_format pdb --no_trifast
+python3 -m boltz.main predict 4G6K_rec.fasta --use_msa_server --output_format pdb
+python3 -m boltz.main predict 4G6K_lig.fasta --use_msa_server --output_format pdb
 
 echo "Results for 4G6K_rec:"
 ls ./boltz_results_4G6K_rec/predictions/4G6K_rec/
