@@ -8,6 +8,6 @@ scripts = [
 
 
 [infra_local]
-docker_image = "lightdock_dok_python:latest"
+docker_image = "chiral.sakuracr.jp/lightdock_dok_python:latest"
 script = "job_4G6K_lightdock.sh"
 
