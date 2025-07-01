@@ -7,7 +7,7 @@ scripts = [
 ]
 
 [dok]
-docker_image = "chiral.sakuracr.jp/boltz_dok_nvidia_2:latest"
+docker_image = "chiral.sakuracr.jp/boltz_dok_nvidia_1:latest"
 commands = [
   "run_dok.sh",
   "https://raw.githubusercontent.com/chiral-data/application-examples/refs/heads/v0.2.4/b/boltz/boltz_dok/job_4G6K.sh",
