@@ -7,5 +7,5 @@ scripts = [
 ]
 
 [infra_local]
-docker_image = "chiral.sakuracr.jp/boltz_dok_nvidia_1:latest"
+docker_image = "boltz_dok_nvidia_1:latest"
 script = "job_4G6K_boltz_1.sh"
