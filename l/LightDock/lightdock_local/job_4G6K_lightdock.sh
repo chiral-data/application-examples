@@ -8,9 +8,9 @@
 # From example: https://lightdock.org/tutorials/0.9.3/simple_docking
 
 
-echo "Copying receptor and ligand protein results..."
-cp /home/ubuntu/chiral/application-examples/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_rec_model_0.pdb ./4G6K_rec.pdb
-cp /home/ubuntu/chiral/application-examples/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_lig_model_0.pdb ./4G6K_lig.pdb
+#echo "Copying receptor and ligand protein results..."
+#cp /home/ubuntu/chiral/application-examples/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_rec_model_0.pdb ./4G6K_rec.pdb
+#cp /home/ubuntu/chiral/application-examples/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_lig_model_0.pdb ./4G6K_lig.pdb
 
 echo "Enable the flags to remove OXT (--noxt) atoms, hydrogens (--noh) and waters (--now), and the ANM support"
 lightdock3_setup.py 4G6K_rec.pdb 4G6K_lig.pdb --noxt --noh --now -anm
