@@ -13,12 +13,12 @@
 #cp /home/ubuntu/chiral/application-examples/b/boltz/boltz_dok/boltz_results_4G6K/4G6K_lig_model_0.pdb ./4G6K_lig.pdb
 
 echo "Enable the flags to remove OXT (--noxt) atoms, hydrogens (--noh) and waters (--now), and the ANM support"
-lightdock3_setup.py 4G6K_rec.pdb 4G6K_lig.pdb --noxt --noh --now -anm
+lightdock3_setup.py 4G6K_rec_model_0.pdb 4G6K_lig_model_0.pdb --noxt --noh --now -anm
 
 lightdock3.py setup.json 100 -c 1 -l 0
 
 cd swarm_0
-lgd_generate_conformations.py ../4G6K_rec.pdb ../4G6K_lig.pdb gso_100.out 200
+lgd_generate_conformations.py ../4G6K_rec_model_0.pdb ../4G6K_lig_model_0.pdb gso_100.out 20
 cd ..
 
 echo "Docking completed. Results are available in results folder."
