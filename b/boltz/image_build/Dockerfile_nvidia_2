@@ -70,14 +70,5 @@ WORKDIR /workspace
 
 # Copy the launching script run.sh from the project folder @common
 COPY run_dok.sh /workspace/run_dok.sh
-RUN chmod +x /workspace/run_dok.sh
 
-# Create a startup script that verifies dependencies
-RUN echo '#!/bin/bash\n\
-echo "Checking NumPy version..."\n\
-python -c "import numpy; assert numpy.__version__ < '\''2.2'\'', f'\''NumPy {numpy.__version__} is too new!'\''"\n\
-echo "NumPy version OK"\n\
-exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/bin/sh"]
+ENTRYPOINT ["/bin/sh"]
