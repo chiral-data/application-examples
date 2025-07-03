@@ -198,11 +198,11 @@ def activate_demo_mode():
     # Load demo structures
     st.session_state.structures = demo_data.get('structures', [])
     
-    # Create mock vectorstore with demo text
-    from chunker import ChemicalAwareChunker
-    from vectorstore import ChemicalVectorStore
-    
+    # Try to create vectorstore, but don't fail if it doesn't work
     try:
+        from chunker import ChemicalAwareChunker
+        from vectorstore import ChemicalVectorStore
+        
         chunker = ChemicalAwareChunker()
         chunks = chunker.chunk_with_structures(demo_data.get('text', ''), st.session_state.structures)
         
@@ -210,35 +210,39 @@ def activate_demo_mode():
         vector_store.create_vectorstore(chunks)
         st.session_state.vectorstore = vector_store
         
-        st.success("Demo mode activated! Sample chemical structures loaded.")
+        st.success("Demo mode activated! Sample chemical structures and Q&A system loaded.")
         return True
     except Exception as e:
-        st.error(f"Error setting up demo mode: {e}")
-        return False
+        # Demo mode still works without Q&A
+        st.session_state.vectorstore = None
+        st.success("Demo mode activated! Sample chemical structures loaded.")
+        st.warning("Q&A functionality unavailable - focus on structure extraction demo.")
+        return True
 
 # Chemical Knowledge Graph - MVP
 
 st.markdown("""
 <div style="background: linear-gradient(90deg, #0066cc 0%, #1e3a5f 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
     <h3 style="color: white; margin: 0; text-align: center;">
-        Upload chemistry papers • Extract structures • Ask intelligent questions
+        Chemistry Paper Analyzer
     </h3>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-**Transform your chemical literature into an intelligent knowledge base.** 
+**Transform your chemical literature into an intelligent knowledge base.**
+
 This tool uses AI to extract chemical structures, analyze content, and answer questions about your papers.
 """)
 
 # Helper functions for downloads
 def create_download_link(val, filename, link_text):
-    \"\"\"Create a download link for data\"\"\"
+    """Create a download link for data"""
     b64 = base64.b64encode(val).decode()
     return f'<a href="data:application/octet-stream;base64,{b64}" download="{filename}" class="download-button">{link_text}</a>'
 
 def create_csv_download(structures):
-    \"\"\"Create CSV data from structures\"\"\"
+    """Create CSV data from structures"""
     if not structures:
         return None
     
@@ -256,7 +260,7 @@ def create_csv_download(structures):
     return df.to_csv(index=False).encode('utf-8')
 
 def get_image_download_link(image_path, filename):
-    \"\"\"Create download link for images\"\"\"
+    """Create download link for images"""
     if os.path.exists(image_path):
         with open(image_path, "rb") as file:
             return create_download_link(file.read(), filename, f"Download {filename}")
@@ -266,23 +270,6 @@ def get_image_download_link(image_path, filename):
 with st.sidebar:
     st.markdown("### Upload Document")
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", help="Upload a chemistry paper to analyze")
-    
-    # Demo mode toggle
-    st.markdown("---")
-    st.markdown("### Demo Mode")
-    st.markdown("*For quick demonstration or if DECIMER models fail*")
-    
-    if st.button("Activate Demo Mode", help="Load sample chemical structures for demonstration"):
-        if activate_demo_mode():
-            st.rerun()
-    
-    if st.session_state.demo_mode:
-        st.success("Demo mode active")
-        if st.button("Exit Demo Mode"):
-            st.session_state.demo_mode = False
-            st.session_state.structures = []
-            st.session_state.vectorstore = None
-            st.rerun()
     
     if uploaded_file is not None:
         # Save uploaded file
@@ -435,137 +422,149 @@ with st.sidebar:
                 processing_status.empty()
                 
                 if not error_occurred:
-                
-                st.success("Paper processed successfully!")
-                
-                # Display processing results
-                col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
-                with col_metrics1:
-                    st.metric("Total Structures Found", len(all_structures))
-                with col_metrics2:
-                    st.metric("Processing Method", "DECIMER" if use_decimer_segmentation else "Standard")
-                with col_metrics3:
-                    if all_structures:
-                        avg_mw = sum(s.get('molecular_weight', 0) for s in all_structures) / len(all_structures)
-                        st.metric("Avg. Molecular Weight", f"{avg_mw:.1f}")
+                    st.success("Paper processed successfully!")
+                    
+                    # Display processing results
+                    col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
+                    with col_metrics1:
+                        st.metric("Total Structures Found", len(all_structures))
+                    with col_metrics2:
+                        st.metric("Processing Method", "DECIMER" if use_decimer_segmentation else "Standard")
+                    with col_metrics3:
+                        if all_structures:
+                            avg_mw = sum(s.get('molecular_weight', 0) for s in all_structures) / len(all_structures)
+                            st.metric("Avg. Molecular Weight", f"{avg_mw:.1f}")
+    
+    # Demo mode toggle - moved to bottom of sidebar
+    st.markdown("---")
+    st.markdown("### Demo Mode")
+    st.markdown("*For quick demonstration or if DECIMER models fail*")
+    
+    if st.button("Activate Demo Mode", help="Load sample chemical structures for demonstration"):
+        if activate_demo_mode():
+            st.rerun()
+    
+    if st.session_state.demo_mode:
+        st.success("Demo mode active")
+        if st.button("Exit Demo Mode"):
+            st.session_state.demo_mode = False
+            st.session_state.structures = []
+            st.session_state.vectorstore = None
+            st.rerun()
 
 # Main interface
-col1, col2 = st.columns([2, 1])
+st.header("Ask Questions")
 
-with col1:
-    st.header("Ask Questions")
+if st.session_state.vectorstore is not None:
+    # Initialize RAG with configured model
+    model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
+    rag = ChemicalRAG(st.session_state.vectorstore, model_name=model_name)
     
-    if st.session_state.vectorstore is not None:
-        # Initialize RAG with configured model
-        model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
-        rag = ChemicalRAG(st.session_state.vectorstore, model_name=model_name)
-        
-        # Query input with enhanced interface
-        st.markdown("**What would you like to know about the paper?**")
-        user_query = st.text_area(
-            "Enter your question:", 
-            height=80,
-            placeholder="e.g., What are the main chemical compounds? What synthesis methods are described?"
+    # Query input with enhanced interface
+    st.markdown("**What would you like to know about the paper?**")
+    user_query = st.text_area(
+        "Enter your question:", 
+        height=80,
+        placeholder="e.g., What are the main chemical compounds? What synthesis methods are described?"
+    )
+    
+    # Quick question buttons
+    st.markdown("**Quick Questions:**")
+    quick_questions = [
+        "What chemical compounds are discussed?",
+        "What synthesis methods are described?",
+        "What are the molecular weights?",
+        "Compare the structures found"
+    ]
+    
+    cols = st.columns(2)
+    for i, question in enumerate(quick_questions):
+        with cols[i % 2]:
+            if st.button(question, key=f"quick_{i}"):
+                user_query = question
+    
+    if st.button("Ask Question", type="primary") and user_query:
+        with st.spinner("Analyzing paper and generating answer..."):
+            answer = rag.query(user_query)
+            
+            st.markdown("### Answer:")
+            st.markdown(f'<div style="background-color: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #0066cc;">{answer}</div>', unsafe_allow_html=True)
+            
+            # Show relevant structures
+            if st.session_state.structures:
+                st.markdown("### Related Chemical Structures:")
+                for i, struct in enumerate(st.session_state.structures[:3]):
+                    with st.expander(f"Structure {i+1} - {struct.get('formula', 'Unknown')}"):
+                        col_struct1, col_struct2 = st.columns([2, 1])
+                        with col_struct1:
+                            st.code(f"SMILES: {struct['smiles']}")
+                            st.text(f"Formula: {struct['formula']}")
+                            st.text(f"MW: {struct['molecular_weight']:.2f}")
+                        with col_struct2:
+                            if os.path.exists(struct.get('image_path', '')):
+                                st.image(struct['image_path'], width=120)
+else:
+    st.info("Upload and process a paper to start asking questions about chemical structures and content.")
+    
+    # Combined capabilities and example questions
+    st.markdown("### What you can ask and example questions:")
+    
+    capabilities_with_examples = [
+        ("**Structure Analysis**: Identify and compare molecular structures", 
+         "What are the main chemical compounds discussed in this paper?"),
+        ("**Synthesis Methods**: Understand chemical synthesis procedures", 
+         "What synthesis methods are described?"),
+        ("**Property Queries**: Get molecular weights, formulas, and properties", 
+         "What are the molecular weights of the compounds found?"),
+        ("**Content Summary**: Summarize key findings and conclusions", 
+         "What are the key findings about the chemical structures?"),
+        ("**Reaction Analysis**: Understand chemical reactions described", 
+         "What reactions are mentioned in the paper?")
+    ]
+    
+    for capability, example in capabilities_with_examples:
+        st.markdown(f"• {capability}")
+        st.code(example, language=None)
+        st.markdown("")
+
+# Extracted Structures section
+st.markdown("---")
+st.header("Extracted Structures")
+
+if st.session_state.structures:
+    # Download all structures as CSV
+    csv_data = create_csv_download(st.session_state.structures)
+    if csv_data:
+        st.markdown(
+            create_download_link(csv_data, "chemical_structures.csv", "Download All Structures (CSV)"),
+            unsafe_allow_html=True
         )
-        
-        # Quick question buttons
-        st.markdown("**Quick Questions:**")
-        quick_questions = [
-            "What chemical compounds are discussed?",
-            "What synthesis methods are described?",
-            "What are the molecular weights?",
-            "Compare the structures found"
-        ]
-        
-        cols = st.columns(2)
-        for i, question in enumerate(quick_questions):
-            with cols[i % 2]:
-                if st.button(question, key=f"quick_{i}"):
-                    user_query = question
-        
-        if st.button("Ask Question", type="primary") and user_query:
-            with st.spinner("Analyzing paper and generating answer..."):
-                answer = rag.query(user_query)
-                
-                st.markdown("### Answer:")
-                st.markdown(f'<div style="background-color: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #0066cc;">{answer}</div>', unsafe_allow_html=True)
-                
-                # Show relevant structures
-                if st.session_state.structures:
-                    st.markdown("### Related Chemical Structures:")
-                    for i, struct in enumerate(st.session_state.structures[:3]):
-                        with st.expander(f"Structure {i+1} - {struct.get('formula', 'Unknown')}"):
-                            col_struct1, col_struct2 = st.columns([2, 1])
-                            with col_struct1:
-                                st.code(f"SMILES: {struct['smiles']}")
-                                st.text(f"Formula: {struct['formula']}")
-                                st.text(f"MW: {struct['molecular_weight']:.2f}")
-                            with col_struct2:
-                                if os.path.exists(struct.get('image_path', '')):
-                                    st.image(struct['image_path'], width=120)
-    else:
-        st.info("Upload and process a paper to start asking questions about chemical structures and content.")
-        
-        # Show example capabilities
-        st.markdown("### What you can ask:")
-        capabilities = [
-            "**Structure Analysis**: Identify and compare molecular structures",
-            "**Synthesis Methods**: Understand chemical synthesis procedures", 
-            "**Property Queries**: Get molecular weights, formulas, and properties",
-            "**Content Summary**: Summarize key findings and conclusions",
-            "**Reaction Analysis**: Understand chemical reactions described"
-        ]
-        
-        for capability in capabilities:
-            st.markdown(f"• {capability}")
-
-with col2:
-    st.header("Extracted Structures")
     
-    if st.session_state.structures:
-        # Download all structures as CSV
-        csv_data = create_csv_download(st.session_state.structures)
-        if csv_data:
-            st.markdown(
-                create_download_link(csv_data, "chemical_structures.csv", "Download All Structures (CSV)"),
-                unsafe_allow_html=True
-            )
-        
-        st.markdown("---")
-        
-        for i, struct in enumerate(st.session_state.structures):
-            with st.expander(f"Structure {i+1}"):
-                col_a, col_b = st.columns([3, 1])
-                
-                with col_a:
+    st.markdown("---")
+    
+    # Display structures in a grid layout
+    cols_per_row = 2
+    for i in range(0, len(st.session_state.structures), cols_per_row):
+        cols = st.columns(cols_per_row)
+        for j, struct in enumerate(st.session_state.structures[i:i+cols_per_row]):
+            with cols[j]:
+                with st.expander(f"Structure {i+j+1}"):
+                    # Structure image
+                    if os.path.exists(struct.get('image_path', '')):
+                        st.image(struct['image_path'], width=200)
+                        # Download link for individual image
+                        img_download = get_image_download_link(
+                            struct['image_path'], 
+                            f"structure_{i+j+1}.png"
+                        )
+                        if img_download:
+                            st.markdown(img_download, unsafe_allow_html=True)
+                    
+                    # Structure details
                     st.code(struct['smiles'])
                     st.text(f"Formula: {struct['formula']}")
                     st.text(f"MW: {struct['molecular_weight']:.2f}")
                     if struct.get('context'):
                         st.text(f"Context: {struct['context'][:100]}...")
-                
-                with col_b:
-                    if os.path.exists(struct['image_path']):
-                        st.image(struct['image_path'], width=150)
-                        # Download link for individual image
-                        img_download = get_image_download_link(
-                            struct['image_path'], 
-                            f"structure_{i+1}.png"
-                        )
-                        if img_download:
-                            st.markdown(img_download, unsafe_allow_html=True)
-    else:
-        st.info("No structures extracted yet. Upload and process a paper to see results.")
-
-# Example queries
-st.markdown("### Example Questions:")
-example_queries = [
-    "What are the main chemical compounds discussed in this paper?",
-    "What synthesis methods are described?",
-    "What are the key findings about the chemical structures?",
-    "Compare the molecular weights of the compounds found.",
-    "What reactions are mentioned in the paper?"
-]
-
-for query in example_queries:
-    st.code(query)
+else:
+    st.info("No structures extracted yet. Upload and process a paper to see results.")
