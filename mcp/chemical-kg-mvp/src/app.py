@@ -1,6 +1,10 @@
 # app.py
 import streamlit as st
 import os
+import base64
+import io
+import pandas as pd
+from PIL import Image
 from pdf_processor import PDFProcessor
 from decimer_client import DECIMERClient
 from chemical_handler import ChemicalHandler
@@ -8,7 +12,131 @@ from chunker import ChemicalAwareChunker
 from vectorstore import ChemicalVectorStore
 from rag_chain import ChemicalRAG
 
-st.set_page_config(page_title="Chemical Paper Analyzer MVP", layout="wide")
+# Configure page
+st.set_page_config(
+    page_title="Chemical Knowledge Graph - MVP", 
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Pharma color scheme CSS
+st.markdown("""
+<style>
+    /* Main theme colors - Professional pharma palette */
+    .main {
+        background-color: #f8fafc;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: #1e3a5f;
+    }
+    
+    /* Headers */
+    h1 {
+        color: #1e3a5f;
+        font-family: 'Arial', sans-serif;
+        font-weight: 600;
+        border-bottom: 3px solid #0066cc;
+        padding-bottom: 10px;
+    }
+    
+    h2, h3 {
+        color: #2c5282;
+        font-family: 'Arial', sans-serif;
+        font-weight: 500;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background-color: #0066cc;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background-color: #0052a3;
+        box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
+    }
+    
+    /* Download buttons */
+    .download-button {
+        background-color: #16a085;
+        color: white;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+        font-weight: 500;
+        margin: 0.25rem;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .download-button:hover {
+        background-color: #138d75;
+        box-shadow: 0 4px 8px rgba(22, 160, 133, 0.2);
+    }
+    
+    /* Cards and containers */
+    .stExpander {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Metrics */
+    [data-testid="metric-container"] {
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Success/Info messages */
+    .stSuccess {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .stInfo {
+        background-color: #cce7ff;
+        border-color: #99d6ff;
+        color: #0066cc;
+    }
+    
+    /* Code blocks */
+    .stCode {
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+    }
+    
+    /* File uploader */
+    .stFileUploader {
+        background-color: white;
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+    }
+    
+    /* Sidebar content */
+    .css-1d391kg .stMarkdown {
+        color: white;
+    }
+    
+    .css-1d391kg .stSelectbox label {
+        color: white;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Initialize session state
 if 'vectorstore' not in st.session_state:
@@ -16,13 +144,55 @@ if 'vectorstore' not in st.session_state:
 if 'structures' not in st.session_state:
     st.session_state.structures = []
 
-st.title("Chemical Paper Analyzer - MVP")
-st.markdown("Upload a chemistry paper and ask questions about structures and content")
+# 🧪 Chemical Knowledge Graph - MVP
+
+st.markdown("""
+<div style="background: linear-gradient(90deg, #0066cc 0%, #1e3a5f 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
+    <h3 style="color: white; margin: 0; text-align: center;">
+        📄 Upload chemistry papers • 🔍 Extract structures • 💬 Ask intelligent questions
+    </h3>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+**Transform your chemical literature into an intelligent knowledge base.** 
+This tool uses AI to extract chemical structures, analyze content, and answer questions about your papers.
+""")
+
+# Helper functions for downloads
+def create_download_link(val, filename, link_text):
+    \"\"\"Create a download link for data\"\"\"
+    b64 = base64.b64encode(val).decode()
+    return f'<a href="data:application/octet-stream;base64,{b64}" download="{filename}" class="download-button">{link_text}</a>'
+
+def create_csv_download(structures):
+    \"\"\"Create CSV data from structures\"\"\"
+    if not structures:
+        return None
+    
+    data = []
+    for i, struct in enumerate(structures):
+        data.append({
+            'Structure_ID': f'Structure_{i+1}',
+            'SMILES': struct.get('smiles', ''),
+            'Molecular_Formula': struct.get('formula', ''),
+            'Molecular_Weight': struct.get('molecular_weight', ''),
+            'Context': struct.get('context', '')[:100] + '...' if len(struct.get('context', '')) > 100 else struct.get('context', '')
+        })
+    
+    df = pd.DataFrame(data)
+    return df.to_csv(index=False).encode('utf-8')
+
+def get_image_download_link(image_path, filename):
+    \"\"\"Create download link for images\"\"\"
+    if os.path.exists(image_path):
+        with open(image_path, \"rb\") as file:
+            return create_download_link(file.read(), filename, f\"📥 Download {filename}\")
+    return None
 
 # Sidebar for file upload
 with st.sidebar:
-    st.header("Upload Paper")
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+    st.markdown(\"### 📁 Upload Document\")\n    uploaded_file = st.file_uploader(\"Choose a PDF file\", type=\"pdf\", help=\"Upload a chemistry paper to analyze\")"}
     
     if uploaded_file is not None:
         # Save uploaded file

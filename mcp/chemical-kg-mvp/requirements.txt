@@ -52,6 +52,7 @@ pydantic==2.5.3
 tqdm==4.66.1
 colorama==0.4.6
 opencv-python-headless==4.8.1.78
+psutil==5.9.6
 
 # Development tools (compatible with older Python)
 ipython==8.12.3

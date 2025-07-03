@@ -52,9 +52,19 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy model download script
+COPY download_models.py .
+
+# Download DECIMER models during build
+RUN python download_models.py && \
+    rm download_models.py
+
 # Copy source code
 COPY src/ ./src/
 COPY data/ ./data/
+
+# Copy test directory for running tests
+COPY test/ ./test/
 
 # Create necessary directories
 RUN mkdir -p /app/temp /app/vectorstore /app/scripts

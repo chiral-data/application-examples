@@ -11,7 +11,7 @@ import argparse
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-def run_pytest(test_path=None, verbose=False, capture=False):
+def run_pytest(test_path=None, verbose=False, capture=False, markers=None, timeout=None):
     """Run pytest with specified options"""
     
     cmd = ['python', '-m', 'pytest']
@@ -26,6 +26,12 @@ def run_pytest(test_path=None, verbose=False, capture=False):
     
     if not capture:
         cmd.append('--tb=short')
+    
+    if markers:
+        cmd.extend(['-m', markers])
+    
+    if timeout:
+        cmd.extend(['--timeout', str(timeout)])
     
     # Add coverage if available
     try:
@@ -124,6 +130,15 @@ def main():
     parser.add_argument('--check-deps', action='store_true', help='Check dependencies')
     parser.add_argument('--all', action='store_true', help='Run all tests (default)')
     
+    # Hanging issue specific options
+    parser.add_argument('--timeout', action='store_true', help='Run only timeout-related tests')
+    parser.add_argument('--memory', action='store_true', help='Run only memory monitoring tests')
+    parser.add_argument('--gpu', action='store_true', help='Run only GPU/CPU fallback tests')
+    parser.add_argument('--perf', action='store_true', help='Run only performance benchmarks')
+    parser.add_argument('--quick', action='store_true', help='Run only quick tests (< 30s each)')
+    parser.add_argument('--stress', action='store_true', help='Run stress tests')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+    
     args = parser.parse_args()
     
     if args.check_deps:
@@ -132,7 +147,26 @@ def main():
     if not check_dependencies():
         return 1
     
-    if args.unit:
+    # Handle specific test categories
+    if args.timeout:
+        print("Running timeout-related tests...")
+        return run_pytest('test', verbose=args.verbose, markers='timeout')
+    elif args.memory:
+        print("Running memory monitoring tests...")
+        return run_pytest('test/unit/test_resource_monitoring.py', verbose=args.verbose)
+    elif args.gpu:
+        print("Running GPU/CPU fallback tests...")
+        return run_pytest('test/unit/test_gpu_cpu_fallback.py', verbose=args.verbose)
+    elif args.perf:
+        print("Running performance benchmarks...")
+        return run_pytest('test/integration/test_performance_benchmarks.py', verbose=args.verbose)
+    elif args.quick:
+        print("Running quick tests...")
+        return run_pytest('test', verbose=args.verbose, markers='not slow', timeout=30)
+    elif args.stress:
+        print("Running stress tests...")
+        return run_pytest('test', verbose=args.verbose, markers='stress')
+    elif args.unit:
         return run_unit_tests()
     elif args.integration:
         return run_integration_tests()

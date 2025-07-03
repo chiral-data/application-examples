@@ -12,7 +12,7 @@ import cv2
 import time
 import threading
 import multiprocessing as mp
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import fitz  # PyMuPDF
 from unittest.mock import patch, MagicMock
 
