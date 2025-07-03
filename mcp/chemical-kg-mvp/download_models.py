@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Download DECIMER models during Docker build to cache them in the image."""
 
+# Fix for SQLite version compatibility with ChromaDB
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import os
 import sys
 

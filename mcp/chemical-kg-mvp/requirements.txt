@@ -2,9 +2,11 @@
 langchain==0.1.0
 langchain-community==0.0.20
 chromadb==0.4.22
+# Fix for SQLite version compatibility with ChromaDB
+pysqlite3-binary
 # Fix tokenizers build issue
 tokenizers==0.19.1
-sentence-transformers==2.2.2
+sentence-transformers>=2.3.0
 PyMuPDF==1.23.8
 pymupdf-fonts==1.0.5
 Pillow>=9.0.0,<11.0.0
