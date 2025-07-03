@@ -1,42 +1,38 @@
-# Fix for SQLite version compatibility with ChromaDB
-try:
-    __import__('pysqlite3')
-    import sys
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-except ImportError:
-    pass
+# vectorstore.py - Chemical vector store using FAISS (Python 3.8 compatible)
+from __future__ import annotations
 
-from langchain_community.embeddings import OllamaEmbeddings, HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
+import pickle
 import re
 
 class ChemicalVectorStore:
     def __init__(self, use_ollama_embeddings=True):
-        if use_ollama_embeddings:
-            # Use Ollama embeddings
+        # Use Ollama embeddings to avoid sentence-transformers dependency
+        try:
             ollama_host = os.getenv("OLLAMA_HOST", "localhost")
             ollama_port = os.getenv("OLLAMA_PORT", "11434")
-            base_url = f"http://{ollama_host}:{ollama_port}"
+            ollama_url = f"http://{ollama_host}:{ollama_port}"
             
             self.embeddings = OllamaEmbeddings(
-                model="nomic-embed-text",  # Optimized for embeddings
-                base_url=base_url
+                base_url=ollama_url,
+                model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
             )
-        else:
-            # Fallback to local HuggingFace embeddings
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2",
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
+            print(f"Using Ollama embeddings at {ollama_url}")
+        except Exception as e:
+            print(f"Failed to initialize Ollama embeddings: {e}")
+            # Fallback to a simple hash-based embedding for development
+            from langchain_community.embeddings import FakeEmbeddings
+            self.embeddings = FakeEmbeddings(size=384)
+            print("Using fallback fake embeddings")
         
         self.vectorstore = None
         self.structures_db = {}
         
-    def create_vectorstore(self, chunks, persist_directory="./chroma_db"):
-        """Create vector store from chunks"""
+    def create_vectorstore(self, chunks, persist_directory="./faiss_db"):
+        """Create vector store from chunks using FAISS"""
         texts = []
         metadatas = []
         
@@ -49,82 +45,69 @@ class ChemicalVectorStore:
                 'chunk_id': chunk['chunk_id'],
                 'page': chunk.get('page', -1),
                 'has_structures': len(chunk.get('structures', [])) > 0,
-                'structure_count': len(chunk.get('structures', [])),
-                'structure_smiles': ','.join([s['smiles'] for s in chunk.get('structures', [])])
+                'structure_count': len(chunk.get('structures', []))
             }
-            metadatas.append(metadata)
             
-            # Store structures separately
-            for struct in chunk.get('structures', []):
-                self.structures_db[struct['smiles']] = struct
+            # Store structure details separately
+            if chunk.get('structures'):
+                structure_smiles = [s['smiles'] for s in chunk['structures'] if s.get('smiles')]
+                metadata['structure_smiles'] = ', '.join(structure_smiles[:3])  # First 3 SMILES
+                
+                # Store full structure data
+                self.structures_db[chunk['chunk_id']] = chunk['structures']
+            
+            metadatas.append(metadata)
         
-        # Create ChromaDB instance
-        self.vectorstore = Chroma.from_texts(
+        # Create FAISS vector store
+        self.vectorstore = FAISS.from_texts(
             texts=texts,
             embedding=self.embeddings,
-            metadatas=metadatas,
-            persist_directory=persist_directory
+            metadatas=metadatas
         )
+        
+        # Save to disk
+        os.makedirs(persist_directory, exist_ok=True)
+        self.vectorstore.save_local(persist_directory)
+        
+        # Save structures database
+        with open(os.path.join(persist_directory, "structures.pkl"), "wb") as f:
+            pickle.dump(self.structures_db, f)
         
         return self.vectorstore
     
     def _enhance_chunk_text(self, chunk):
-        """Enhance chunk text with chemical information"""
-        text = chunk['text']
+        """Enhance chunk text with structure information"""
+        enhanced = chunk['text']
         
         if chunk.get('structures'):
-            text += "\n\n[Chemical Structures Found]:\n"
-            for i, struct in enumerate(chunk['structures']):
-                text += f"Structure {i+1}: SMILES={struct['smiles']}"
-                if 'formula' in struct:
-                    text += f", Formula={struct['formula']}"
-                if 'molecular_weight' in struct:
-                    text += f", MW={struct['molecular_weight']:.2f}"
-                text += "\n"
+            enhanced += "\n\nChemical Structures Found:\n"
+            for struct in chunk['structures']:
+                if struct.get('smiles'):
+                    enhanced += f"- SMILES: {struct['smiles']}\n"
+                if struct.get('formula'):
+                    enhanced += f"  Formula: {struct['formula']}\n"
+                if struct.get('molecular_weight'):
+                    enhanced += f"  MW: {struct['molecular_weight']:.2f}\n"
         
-        return text
+        return enhanced
     
-    def similarity_search(self, query, k=5, filter_dict=None):
-        """Enhanced similarity search"""
-        # Check if query contains SMILES
-        smiles_pattern = r'[C,c][0-9A-Za-z@+\-\[\]\(\)\\=#$]+'
+    def similarity_search(self, query, k=4):
+        """Search for similar chunks"""
+        if not self.vectorstore:
+            return []
         
-        if re.search(smiles_pattern, query):
-            # Query contains SMILES, enhance search
-            return self._structure_aware_search(query, k)
-        
-        # Regular text search
-        if filter_dict:
-            return self.vectorstore.similarity_search(
-                query, k=k, filter=filter_dict
-            )
         return self.vectorstore.similarity_search(query, k=k)
     
-    def _structure_aware_search(self, query, k=5):
-        """Search considering chemical structures"""
-        # Extract potential SMILES from query
-        smiles_pattern = r'[C,c][0-9A-Za-z@+\-\[\]\(\)\\=#$]+'
-        potential_smiles = re.findall(smiles_pattern, query)
+    def get_structures_for_chunk(self, chunk_id):
+        """Get structures associated with a chunk"""
+        return self.structures_db.get(chunk_id, [])
+    
+    def load_from_disk(self, persist_directory="./faiss_db"):
+        """Load vector store from disk"""
+        self.vectorstore = FAISS.load_local(persist_directory, self.embeddings)
         
-        # Search for chunks containing similar structures
-        results = []
-        
-        if potential_smiles:
-            # Find chunks with these SMILES
-            # Since structure_smiles is now a comma-separated string, we need to search differently
-            for smiles in potential_smiles:
-                filter_results = self.vectorstore.similarity_search(
-                    query, 
-                    k=k,
-                    filter=lambda metadata: smiles in metadata.get("structure_smiles", "")
-                )
-                results.extend(filter_results)
-        
-        # If not enough results, do regular search
-        if len(results) < k:
-            additional = self.vectorstore.similarity_search(
-                query, k=k-len(results)
-            )
-            results.extend(additional)
-        
-        return results
+        # Load structures database
+        structures_path = os.path.join(persist_directory, "structures.pkl")
+        if os.path.exists(structures_path):
+            with open(structures_path, "rb") as f:
+                self.structures_db = pickle.load(f)

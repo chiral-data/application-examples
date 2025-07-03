@@ -6,8 +6,9 @@ import io
 from typing import List, Dict, Any, Optional
 
 try:
-    from decimer_segmentation import segment_chemical_structures_from_file
+    from decimer_segmentation import segment_chemical_structures_from_file, segment_chemical_structures
     import cv2
+    import pdf2image
     DECIMER_SEGMENTATION_AVAILABLE = True
 except ImportError:
     DECIMER_SEGMENTATION_AVAILABLE = False
@@ -181,46 +182,105 @@ class PDFProcessor:
             return {'page_count': self.doc.page_count if self.doc else 0}
     
     def extract_chemical_structures_with_decimer(self, expand: bool = True) -> List[Dict[str, Any]]:
-        """Extract chemical structures using DECIMER segmentation"""
+        """Extract chemical structures using DECIMER segmentation with image-based approach"""
         if not DECIMER_SEGMENTATION_AVAILABLE:
             print("DECIMER segmentation not available. Using standard image extraction.")
-            return self.extract_text_and_images()
+            # Return images from standard extraction for processing
+            pages_data = self.extract_text_and_images()
+            images = []
+            for page_data in pages_data:
+                images.extend(page_data.get('images', []))
+            return images
         
         try:
-            print(f"Using DECIMER to segment chemical structures from {self.pdf_path}")
+            print(f"Using DECIMER image-based segmentation for {self.pdf_path}")
             
-            # Get chemical structure segments
-            segments = segment_chemical_structures_from_file(self.pdf_path, expand=expand)
-            print(f"DECIMER found {len(segments)} chemical structures")
+            # Step 1: Convert PDF to high-resolution images
+            try:
+                import pdf2image
+                print("Converting PDF to images...")
+                
+                # Create temp directory for page images
+                pages_dir = os.path.join(self.temp_dir, "pdf_pages")
+                os.makedirs(pages_dir, exist_ok=True)
+                
+                # Convert PDF to images
+                page_images = pdf2image.convert_from_path(self.pdf_path, dpi=300)
+                print(f"Converted PDF to {len(page_images)} page images")
+                
+                # Save page images
+                page_image_paths = []
+                for i, page_image in enumerate(page_images):
+                    page_path = os.path.join(pages_dir, f"page_{i+1}.png")
+                    page_image.save(page_path)
+                    page_image_paths.append(page_path)
+                    print(f"Saved page {i+1}: {page_path}")
+                
+            except Exception as e:
+                print(f"PDF to image conversion failed: {e}")
+                raise
             
-            # Save segments as images
-            structures = []
-            for i, segment in enumerate(segments):
+            # Step 2: Segment structures from each page image
+            all_structures = []
+            structure_count = 0
+            
+            for page_idx, page_image_path in enumerate(page_image_paths):
                 try:
-                    # Save segment image
-                    img_filename = f"decimer_structure_{i}.png"
-                    img_path = os.path.join(self.temp_dir, img_filename)
-                    cv2.imwrite(img_path, segment)
+                    print(f"Segmenting structures from page {page_idx + 1}...")
                     
-                    # Get dimensions
-                    height, width = segment.shape[:2]
+                    # Read page image
+                    page_image = cv2.imread(page_image_path)
+                    if page_image is None:
+                        print(f"Failed to read page image: {page_image_path}")
+                        continue
                     
-                    structures.append({
-                        'path': img_path,
-                        'index': i,
-                        'width': width,
-                        'height': height,
-                        'source': 'decimer_segmentation'
-                    })
+                    # Segment structures from this page
+                    from decimer_segmentation import segment_chemical_structures
+                    segments = segment_chemical_structures(page_image, expand=expand)
+                    
+                    print(f"Found {len(segments)} structures on page {page_idx + 1}")
+                    
+                    # Save each segment
+                    for seg_idx, segment in enumerate(segments):
+                        try:
+                            # Save segment image
+                            img_filename = f"structure_page_{page_idx+1}_{seg_idx+1}.png"
+                            img_path = os.path.join(self.temp_dir, img_filename)
+                            cv2.imwrite(img_path, segment)
+                            
+                            # Get dimensions
+                            height, width = segment.shape[:2]
+                            
+                            all_structures.append({
+                                'path': img_path,
+                                'index': structure_count,
+                                'page': page_idx + 1,
+                                'segment_on_page': seg_idx + 1,
+                                'width': width,
+                                'height': height,
+                                'source': 'decimer_image_segmentation'
+                            })
+                            
+                            structure_count += 1
+                            
+                        except Exception as e:
+                            print(f"Error saving segment {seg_idx} from page {page_idx + 1}: {e}")
                     
                 except Exception as e:
-                    print(f"Error saving segment {i}: {e}")
+                    print(f"Error processing page {page_idx + 1}: {e}")
+                    continue
             
-            return structures
+            print(f"DECIMER image-based segmentation completed: {len(all_structures)} structures found")
+            return all_structures
             
         except Exception as e:
-            print(f"DECIMER segmentation failed: {e}. Falling back to standard extraction.")
-            return self.extract_text_and_images()
+            print(f"DECIMER image-based segmentation failed: {e}. Falling back to standard extraction.")
+            # Return images from standard extraction for processing
+            pages_data = self.extract_text_and_images()
+            images = []
+            for page_data in pages_data:
+                images.extend(page_data.get('images', []))
+            return images
     
     def __del__(self):
         """Cleanup when object is destroyed"""

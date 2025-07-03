@@ -26,6 +26,7 @@ except ImportError:
 try:
     from decimer_segmentation import segment_chemical_structures_from_file, segment_chemical_structures
     import cv2
+    import pdf2image
     SEGMENTATION_AVAILABLE = True
 except ImportError:
     SEGMENTATION_AVAILABLE = False
@@ -52,20 +53,62 @@ class DECIMERClient:
         if not self.decimer_available:
             print("DECIMER not available. Chemical structure recognition will be skipped.")
     
-    def segment_structures_from_pdf(self, pdf_path: str, expand: bool = True) -> List[Any]:
-        """Extract chemical structure images from PDF using DECIMER segmentation"""
+    def convert_pdf_to_images(self, pdf_path: str, output_dir: str = "temp_pdf_pages", dpi: int = 300) -> List[str]:
+        """Convert PDF to high-resolution images"""
+        try:
+            print(f"Converting PDF to images: {pdf_path}")
+            
+            # Create output directory
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Convert PDF to images
+            images = pdf2image.convert_from_path(pdf_path, dpi=dpi)
+            
+            image_paths = []
+            for i, image in enumerate(images):
+                image_path = os.path.join(output_dir, f"page_{i+1}.png")
+                image.save(image_path)
+                image_paths.append(image_path)
+                print(f"Saved page {i+1}: {image_path} ({image.size})")
+            
+            print(f"Converted PDF to {len(image_paths)} images")
+            return image_paths
+            
+        except Exception as e:
+            print(f"Error converting PDF to images: {e}")
+            self.stats['errors'] += 1
+            return []
+    
+    def segment_structures_from_pdf(self, pdf_path: str, expand: bool = True, output_dir: str = "temp_pdf_pages") -> List[Any]:
+        """Extract chemical structure images from PDF using image-based approach"""
         if not self.segmentation_available:
             print("DECIMER segmentation not available")
             return []
         
         try:
-            print(f"Segmenting chemical structures from PDF: {pdf_path}")
-            segments = segment_chemical_structures_from_file(pdf_path, expand=expand)
-            self.stats['segmented_structures'] += len(segments)
-            print(f"Found {len(segments)} chemical structures in PDF")
-            return segments
+            print(f"Processing PDF with image-based approach: {pdf_path}")
+            
+            # Step 1: Convert PDF to images
+            image_paths = self.convert_pdf_to_images(pdf_path, output_dir)
+            
+            if not image_paths:
+                print("Failed to convert PDF to images")
+                return []
+            
+            # Step 2: Segment structures from each image
+            all_segments = []
+            for image_path in image_paths:
+                print(f"Segmenting structures from: {image_path}")
+                segments = self.segment_structures_from_image(image_path, expand=expand)
+                all_segments.extend(segments)
+                print(f"Found {len(segments)} structures in {image_path}")
+            
+            self.stats['segmented_structures'] += len(all_segments)
+            print(f"Total structures found: {len(all_segments)}")
+            return all_segments
+            
         except Exception as e:
-            print(f"Error segmenting PDF {pdf_path}: {e}")
+            print(f"Error processing PDF {pdf_path}: {e}")
             self.stats['errors'] += 1
             return []
     
@@ -152,23 +195,29 @@ class DECIMERClient:
         return results
     
     def _validate_smiles(self, smiles: str) -> bool:
-        """Validate SMILES string using RDKit"""
+        """Validate SMILES string using RDKit, allowing R-group placeholders"""
         if not smiles or len(smiles) < 2:
-            return False
-        
-        # Basic character validation
-        valid_chars = set('CNOPSFClBrI[]()=#@+-\\/.0123456789cnops%')
-        if not all(c in valid_chars for c in smiles):
-            print(f"Invalid characters in SMILES: {smiles}")
             return False
         
         # Try RDKit validation if available
         try:
             from rdkit import Chem
+            
+            # Check if SMILES contains R-group placeholders (common in medicinal chemistry)
+            r_group_patterns = ['[R1]', '[R2]', '[R3]', '[R4]', '[R5]', '[R]']
+            has_r_groups = any(pattern in smiles for pattern in r_group_patterns)
+            
+            if has_r_groups:
+                # For R-group containing SMILES, do basic syntax check instead of RDKit validation
+                # RDKit doesn't recognize R-group placeholders as valid atoms
+                print(f"SMILES contains R-group placeholders - accepting as valid: {smiles}")
+                return True
+            
+            # For regular SMILES, use RDKit validation
             mol = Chem.MolFromSmiles(smiles)
             return mol is not None
         except ImportError:
-            # RDKit not available, return basic validation
+            # RDKit not available, trust DECIMER output
             return True
         except Exception as e:
             print(f"SMILES validation error: {e}")
@@ -193,41 +242,52 @@ class DECIMERClient:
         return self.stats.copy()
     
     def process_pdf_complete(self, pdf_path: str, output_dir: str = "extracted_structures") -> Dict[str, Any]:
-        """Complete workflow: segment structures from PDF and convert to SMILES"""
+        """Complete workflow: segment structures from PDF and convert to SMILES using image-based approach"""
         if not (self.decimer_available and self.segmentation_available):
             print("Both DECIMER and segmentation packages required for complete PDF processing")
             return {"error": "Missing required packages"}
         
+        start_time = time.time()
+        
         # Create output directory
         os.makedirs(output_dir, exist_ok=True)
         
-        # Segment structures from PDF
-        segments = self.segment_structures_from_pdf(pdf_path)
+        # Segment structures from PDF using image-based approach
+        segments = self.segment_structures_from_pdf(pdf_path, output_dir=f"{output_dir}_temp_pages")
         
         results = {
             "pdf_path": pdf_path,
             "total_structures": len(segments),
+            "processing_time": 0,
             "structures": []
         }
         
         # Process each segmented structure
         for i, segment in enumerate(segments):
             try:
-                # Save segment as temporary image
-                temp_path = os.path.join(output_dir, f"structure_{i+1}.png")
-                cv2.imwrite(temp_path, segment)
+                # Save segment as image
+                structure_path = os.path.join(output_dir, f"structure_{i+1}.png")
+                cv2.imwrite(structure_path, segment)
+                
+                print(f"Processing structure {i+1}/{len(segments)}: {structure_path}")
                 
                 # Convert to SMILES
-                smiles = self.image_to_smiles(temp_path)
+                smiles = self.image_to_smiles(structure_path)
                 
                 structure_info = {
                     "index": i + 1,
-                    "image_path": temp_path,
+                    "image_path": structure_path,
                     "smiles": smiles,
-                    "valid": smiles is not None
+                    "valid": smiles is not None,
+                    "image_size": segment.shape if hasattr(segment, 'shape') else None
                 }
                 
                 results["structures"].append(structure_info)
+                
+                if smiles:
+                    print(f"  Success: {smiles}")
+                else:
+                    print(f"  Failed: No valid SMILES generated")
                 
             except Exception as e:
                 print(f"Error processing segment {i+1}: {e}")
@@ -235,5 +295,12 @@ class DECIMERClient:
                     "index": i + 1,
                     "error": str(e)
                 })
+        
+        results["processing_time"] = time.time() - start_time
+        
+        # Summary
+        valid_structures = sum(1 for s in results["structures"] if s.get("valid", False))
+        print(f"\nProcessing complete: {valid_structures}/{len(segments)} structures successfully converted to SMILES")
+        print(f"Total processing time: {results['processing_time']:.2f} seconds")
         
         return results

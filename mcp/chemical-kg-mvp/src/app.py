@@ -1,4 +1,12 @@
 # app.py
+# Fix for Python 3.8 type annotation compatibility
+from __future__ import annotations
+
+# Disable ChromaDB telemetry to avoid posthog issues
+import os
+os.environ["CHROMA_TELEMETRY"] = "false"
+os.environ["ANONYMIZED_TELEMETRY"] = "false"
+
 # Fix for SQLite version compatibility with ChromaDB
 try:
     __import__('pysqlite3')
@@ -8,7 +16,6 @@ except ImportError:
     pass
 
 import streamlit as st
-import os
 import base64
 import io
 import json
@@ -20,6 +27,7 @@ from chemical_handler import ChemicalHandler
 from chunker import ChemicalAwareChunker
 from vectorstore import ChemicalVectorStore
 from rag_chain import ChemicalRAG
+from llm_call import format_rag_response
 
 # Configure page
 st.set_page_config(
@@ -74,20 +82,29 @@ st.markdown("""
     
     /* Download buttons */
     .download-button {
-        background-color: #16a085;
-        color: white;
+        background-color: #0066cc !important;
+        color: white !important;
         border-radius: 6px;
         padding: 0.5rem 1rem;
-        text-decoration: none;
+        text-decoration: none !important;
         font-weight: 500;
         margin: 0.25rem;
         display: inline-block;
         transition: all 0.3s ease;
+        border: 2px solid #0066cc;
     }
     
     .download-button:hover {
-        background-color: #138d75;
-        box-shadow: 0 4px 8px rgba(22, 160, 133, 0.2);
+        background-color: #0052a3 !important;
+        border-color: #0052a3;
+        box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+        color: white !important;
+        text-decoration: none !important;
+    }
+    
+    .download-button:visited {
+        color: white !important;
+        text-decoration: none !important;
     }
     
     /* Cards and containers */
@@ -151,73 +168,11 @@ if 'vectorstore' not in st.session_state:
     st.session_state.vectorstore = None
 if 'structures' not in st.session_state:
     st.session_state.structures = []
-if 'demo_mode' not in st.session_state:
-    st.session_state.demo_mode = False
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'rag_chain' not in st.session_state:
+    st.session_state.rag_chain = None
 
-# Demo data functions
-def load_demo_data():
-    """Load pre-generated demo data"""
-    try:
-        demo_data_path = os.path.join(os.path.dirname(__file__), '..', 'demo_data.json')
-        if os.path.exists(demo_data_path):
-            with open(demo_data_path, 'r') as f:
-                demo_data = json.load(f)
-            return demo_data
-    except Exception as e:
-        st.error(f"Error loading demo data: {e}")
-    
-    # Fallback demo data if file doesn't exist
-    return {
-        "structures": [
-            {
-                "smiles": "CC(=O)Oc1ccccc1C(=O)O",
-                "formula": "C9H8O4", 
-                "molecular_weight": 180.16,
-                "context": "Aspirin (acetylsalicylic acid) is a medication used to reduce pain, fever, or inflammation.",
-                "name": "Aspirin",
-                "image_path": None
-            },
-            {
-                "smiles": "CC(C)Cc1ccc(cc1)[C@@H](C)C(=O)O",
-                "formula": "C13H18O2",
-                "molecular_weight": 206.28, 
-                "context": "Ibuprofen is a nonsteroidal anti-inflammatory drug (NSAID).",
-                "name": "Ibuprofen",
-                "image_path": None
-            }
-        ],
-        "text": "This is demo chemical literature containing pharmaceutical compounds.",
-        "source": "demo_fallback"
-    }
-
-def activate_demo_mode():
-    """Activate demo mode with pre-loaded data"""
-    st.session_state.demo_mode = True
-    demo_data = load_demo_data()
-    
-    # Load demo structures
-    st.session_state.structures = demo_data.get('structures', [])
-    
-    # Try to create vectorstore, but don't fail if it doesn't work
-    try:
-        from chunker import ChemicalAwareChunker
-        from vectorstore import ChemicalVectorStore
-        
-        chunker = ChemicalAwareChunker()
-        chunks = chunker.chunk_with_structures(demo_data.get('text', ''), st.session_state.structures)
-        
-        vector_store = ChemicalVectorStore()
-        vector_store.create_vectorstore(chunks)
-        st.session_state.vectorstore = vector_store
-        
-        st.success("Demo mode activated! Sample chemical structures and Q&A system loaded.")
-        return True
-    except Exception as e:
-        # Demo mode still works without Q&A
-        st.session_state.vectorstore = None
-        st.success("Demo mode activated! Sample chemical structures loaded.")
-        st.warning("Q&A functionality unavailable - focus on structure extraction demo.")
-        return True
 
 # Chemical Knowledge Graph - MVP
 
@@ -248,12 +203,22 @@ def create_csv_download(structures):
     
     data = []
     for i, struct in enumerate(structures):
+        # Extract page number from context if available
+        page_num = ''
+        context = struct.get('context', '')
+        if 'page' in context.lower():
+            # Try to extract page number from context like "Structure from page 2"
+            import re
+            page_match = re.search(r'page\s+(\d+)', context.lower())
+            if page_match:
+                page_num = page_match.group(1)
+        
         data.append({
             'Structure_ID': f'Structure_{i+1}',
             'SMILES': struct.get('smiles', ''),
             'Molecular_Formula': struct.get('formula', ''),
             'Molecular_Weight': struct.get('molecular_weight', ''),
-            'Context': struct.get('context', '')[:100] + '...' if len(struct.get('context', '')) > 100 else struct.get('context', '')
+            'Page': page_num
         })
     
     df = pd.DataFrame(data)
@@ -285,17 +250,31 @@ with st.sidebar:
             error_occurred = False
             processing_status = st.empty()
             
+            # Add progress log below spinner
+            progress_container = st.container()
+            with progress_container:
+                progress_log = []
+                log_display = st.empty()
+                
+                def update_progress(message):
+                    progress_log.append(message)
+                    # Keep last 8 messages
+                    display_text = "\n".join(progress_log[-8:])
+                    log_display.text(display_text)
+            
             try:
                 with st.spinner("Processing paper..."):
                     processing_status.info("Initializing components...")
+                    update_progress("Starting PDF processing...")
                     
                     # Initialize components with error handling
                     try:
                         pdf_processor = PDFProcessor("temp_paper.pdf")
-                        processing_status.info("PDF processor initialized ✓")
+                        processing_status.info("PDF processor initialized")
+                        update_progress("PDF processor ready")
                     except Exception as e:
                         st.error(f"Failed to initialize PDF processor: {e}")
-                        st.info("💡 Try uploading a different PDF file or use demo mode.")
+                        st.info("Try uploading a different PDF file.")
                         error_occurred = True
                     
                     if not error_occurred:
@@ -303,18 +282,18 @@ with st.sidebar:
                             decimer_client = DECIMERClient()
                             chem_handler = ChemicalHandler(decimer_client)
                             chunker = ChemicalAwareChunker()
-                            processing_status.info("DECIMER components initialized ✓")
+                            processing_status.info("DECIMER components initialized")
+                            update_progress("DECIMER components ready")
+                            update_progress(f"GPU available: {decimer_client.decimer_available}")
                         except Exception as e:
                             st.warning(f"DECIMER initialization failed: {e}")
-                            st.info("💡 Consider activating Demo Mode for a quick demonstration.")
-                            if st.button("Activate Demo Mode Now"):
-                                if activate_demo_mode():
-                                    st.rerun()
+                            st.info("Try uploading a different PDF file or check the logs for more details.")
                             error_occurred = True
                     
                     if not error_occurred:
                         # Extract content
                         processing_status.info("Extracting text and images...")
+                        update_progress("Extracting content from PDF...")
                         try:
                             pages_data = pdf_processor.extract_text_and_images()
                             
@@ -323,11 +302,12 @@ with st.sidebar:
                             for page_data in pages_data:
                                 full_text += page_data['text'] + "\n"
                             
-                            processing_status.info(f"Extracted {len(full_text)} characters of text ✓")
+                            processing_status.info(f"Extracted {len(full_text)} characters of text")
+                            update_progress(f"Extracted {len(pages_data)} pages, {len(full_text):,} characters")
                             
                         except Exception as e:
                             st.error(f"Failed to extract content from PDF: {e}")
-                            st.info("💡 The PDF might be corrupted or password-protected.")
+                            st.info("The PDF might be corrupted or password-protected.")
                             error_occurred = True
                     
                     if not error_occurred:
@@ -338,19 +318,27 @@ with st.sidebar:
                         try:
                             if use_decimer_segmentation:
                                 processing_status.info("Using DECIMER segmentation...")
+                                update_progress("Starting DECIMER AI segmentation...")
                                 # Use DECIMER to segment and process structures
                                 try:
                                     chemical_images = pdf_processor.extract_chemical_structures_with_decimer()
+                                    update_progress(f"Found {len(chemical_images)} chemical structures")
                                     
-                                    for img_info in chemical_images:
+                                    for i, img_info in enumerate(chemical_images):
                                         try:
+                                            # Update progress every few structures
+                                            if i % 3 == 0:
+                                                update_progress(f"Processing structure {i+1}/{len(chemical_images)}...")
+                                            
                                             structure = chem_handler.process_image(
                                                 img_info['path'],
-                                                f"Chemical structure {img_info['index'] + 1}"
+                                                f"Structure from page {img_info.get('page', 'unknown')}"
                                             )
                                             
                                             if structure:
                                                 all_structures.append(structure)
+                                                if structure.get('smiles') and (i % 3 == 0 or i == len(chemical_images)-1):
+                                                    update_progress(f"Generated SMILES for structure {i+1}")
                                         except Exception as e:
                                             st.warning(f"Failed to process structure {img_info['index'] + 1}: {e}")
                                             continue
@@ -383,11 +371,12 @@ with st.sidebar:
                                             continue
                             
                             st.session_state.structures = all_structures
-                            processing_status.info(f"Found {len(all_structures)} chemical structures ✓")
+                            processing_status.info(f"Found {len(all_structures)} chemical structures")
+                            update_progress(f"Processing complete! Found {len(all_structures)} structures")
                             
                         except Exception as e:
                             st.error(f"Structure processing failed: {e}")
-                            st.info("💡 Try using Demo Mode to see the interface functionality.")
+                            st.info("Try uploading a different PDF file or check GPU acceleration.")
                             error_occurred = True
                     
                     if not error_occurred:
@@ -395,7 +384,7 @@ with st.sidebar:
                         processing_status.info("Creating document chunks...")
                         try:
                             chunks = chunker.chunk_with_structures(full_text, all_structures)
-                            processing_status.info(f"Created {len(chunks)} document chunks ✓")
+                            processing_status.info(f"Created {len(chunks)} document chunks")
                         except Exception as e:
                             st.error(f"Failed to create document chunks: {e}")
                             error_occurred = True
@@ -407,15 +396,15 @@ with st.sidebar:
                             vector_store = ChemicalVectorStore()
                             vector_store.create_vectorstore(chunks)
                             st.session_state.vectorstore = vector_store
-                            processing_status.info("Vector database created ✓")
+                            processing_status.info("Vector database created")
                         except Exception as e:
                             st.error(f"Failed to create vector database: {e}")
-                            st.info("💡 This might be an embedding model issue. Try demo mode.")
+                            st.info("This might be an embedding model issue. Check the logs for more details.")
                             error_occurred = True
                 
             except Exception as e:
                 st.error(f"Unexpected error during processing: {e}")
-                st.info("💡 Please try Demo Mode or check the logs for more details.")
+                st.info("Please check the logs for more details or try a different PDF.")
                 error_occurred = True
             
             finally:
@@ -425,107 +414,105 @@ with st.sidebar:
                     st.success("Paper processed successfully!")
                     
                     # Display processing results
-                    col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
-                    with col_metrics1:
-                        st.metric("Total Structures Found", len(all_structures))
-                    with col_metrics2:
-                        st.metric("Processing Method", "DECIMER" if use_decimer_segmentation else "Standard")
-                    with col_metrics3:
-                        if all_structures:
-                            avg_mw = sum(s.get('molecular_weight', 0) for s in all_structures) / len(all_structures)
-                            st.metric("Avg. Molecular Weight", f"{avg_mw:.1f}")
+                    st.metric("Total Structures Found", len(all_structures))
     
-    # Demo mode toggle - moved to bottom of sidebar
-    st.markdown("---")
-    st.markdown("### Demo Mode")
-    st.markdown("*For quick demonstration or if DECIMER models fail*")
-    
-    if st.button("Activate Demo Mode", help="Load sample chemical structures for demonstration"):
-        if activate_demo_mode():
-            st.rerun()
-    
-    if st.session_state.demo_mode:
-        st.success("Demo mode active")
-        if st.button("Exit Demo Mode"):
-            st.session_state.demo_mode = False
-            st.session_state.structures = []
-            st.session_state.vectorstore = None
-            st.rerun()
+    # Real-time progress logging provides visibility into processing steps
 
 # Main interface
 st.header("Ask Questions")
 
 if st.session_state.vectorstore is not None:
-    # Initialize RAG with configured model
-    model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
-    rag = ChemicalRAG(st.session_state.vectorstore, model_name=model_name)
+    # Initialize RAG with configured model (once)
+    if st.session_state.rag_chain is None:
+        model_name = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
+        st.session_state.rag_chain = ChemicalRAG(st.session_state.vectorstore, model_name=model_name)
     
-    # Query input with enhanced interface
-    st.markdown("**What would you like to know about the paper?**")
-    user_query = st.text_area(
-        "Enter your question:", 
-        height=80,
-        placeholder="e.g., What are the main chemical compounds? What synthesis methods are described?"
-    )
+    # Chat interface
+    st.markdown("**Chat with your document:**")
     
-    # Quick question buttons
-    st.markdown("**Quick Questions:**")
-    quick_questions = [
-        "What chemical compounds are discussed?",
-        "What synthesis methods are described?",
-        "What are the molecular weights?",
-        "Compare the structures found"
-    ]
+    # Example questions (text only)
+    st.markdown("*Example questions you can ask:*")
+    st.markdown("""
+    • What are the main chemical compounds discussed?
     
-    cols = st.columns(2)
-    for i, question in enumerate(quick_questions):
-        with cols[i % 2]:
-            if st.button(question, key=f"quick_{i}"):
-                user_query = question
+    • What synthesis methods are described?
     
-    if st.button("Ask Question", type="primary") and user_query:
-        with st.spinner("Analyzing paper and generating answer..."):
-            answer = rag.query(user_query)
-            
-            st.markdown("### Answer:")
-            st.markdown(f'<div style="background-color: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #0066cc;">{answer}</div>', unsafe_allow_html=True)
-            
-            # Show relevant structures
-            if st.session_state.structures:
-                st.markdown("### Related Chemical Structures:")
-                for i, struct in enumerate(st.session_state.structures[:3]):
-                    with st.expander(f"Structure {i+1} - {struct.get('formula', 'Unknown')}"):
-                        col_struct1, col_struct2 = st.columns([2, 1])
-                        with col_struct1:
-                            st.code(f"SMILES: {struct['smiles']}")
-                            st.text(f"Formula: {struct['formula']}")
-                            st.text(f"MW: {struct['molecular_weight']:.2f}")
-                        with col_struct2:
-                            if os.path.exists(struct.get('image_path', '')):
-                                st.image(struct['image_path'], width=120)
+    • What are the molecular weights of the compounds?
+    
+    • Compare the structures found in this paper
+    
+    • Explain the reaction mechanisms described
+    """)
+    
+    # Chat history display
+    chat_container = st.container()
+    with chat_container:
+        if st.session_state.chat_history:
+            st.markdown("### Conversation:")
+            for i, (question, answer) in enumerate(st.session_state.chat_history):
+                # User question
+                st.markdown(f'<div style="background-color: #e3f2fd; padding: 0.8rem; border-radius: 8px; margin: 0.5rem 0; border-left: 4px solid #2196f3;"><strong>You:</strong> {question}</div>', unsafe_allow_html=True)
+                
+                # Assistant answer
+                st.markdown(f'<div style="background-color: #f8fafc; padding: 0.8rem; border-radius: 8px; margin: 0.5rem 0; border-left: 4px solid #0066cc;"><strong>Assistant:</strong> {answer}</div>', unsafe_allow_html=True)
+                
+                # Add some spacing
+                st.markdown("---")
+    
+    # Chat input at the bottom
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_area(
+            "Ask a question about the paper:",
+            height=100,
+            placeholder="Type your question here...",
+            key="chat_input"
+        )
+        submit_button = st.form_submit_button("Send", type="primary")
+        
+        if submit_button and user_input.strip():
+            with st.spinner("Thinking..."):
+                try:
+                    raw_answer = st.session_state.rag_chain.query(user_input.strip())
+                    # Format the answer using LLM for better readability
+                    formatted_answer = format_rag_response(raw_answer)
+                    # Add to chat history
+                    st.session_state.chat_history.append((user_input.strip(), formatted_answer))
+                    st.rerun()
+                except Exception as e:
+                    if "Connection refused" in str(e) or "11434" in str(e):
+                        st.error("Ollama LLM service is not available. Please ensure Ollama is installed and running.")
+                        st.info("The chemical structure extraction is working, but Q&A requires Ollama to be set up.")
+                    else:
+                        st.error(f"Error generating answer: {e}")
+    
+    # Clear chat button
+    if st.session_state.chat_history:
+        if st.button("Clear Chat History", key="clear_chat"):
+            st.session_state.chat_history = []
+            st.rerun()
 else:
-    st.info("Upload and process a paper to start asking questions about chemical structures and content.")
+    st.info("Upload and process a paper to start chatting about chemical structures and content.")
     
-    # Combined capabilities and example questions
-    st.markdown("### What you can ask and example questions:")
+    # Show capabilities without buttons
+    st.markdown("### What you can ask:")
     
-    capabilities_with_examples = [
-        ("**Structure Analysis**: Identify and compare molecular structures", 
-         "What are the main chemical compounds discussed in this paper?"),
-        ("**Synthesis Methods**: Understand chemical synthesis procedures", 
-         "What synthesis methods are described?"),
-        ("**Property Queries**: Get molecular weights, formulas, and properties", 
-         "What are the molecular weights of the compounds found?"),
-        ("**Content Summary**: Summarize key findings and conclusions", 
-         "What are the key findings about the chemical structures?"),
-        ("**Reaction Analysis**: Understand chemical reactions described", 
-         "What reactions are mentioned in the paper?")
-    ]
+    st.markdown("""
+    **Structure Analysis:** Identify and compare molecular structures
+    - What are the main chemical compounds discussed in this paper?
     
-    for capability, example in capabilities_with_examples:
-        st.markdown(f"• {capability}")
-        st.code(example, language=None)
-        st.markdown("")
+    **Synthesis Methods:** Understand chemical synthesis procedures  
+    - What synthesis methods are described?
+    
+    **Property Queries:** Get molecular weights, formulas, and properties
+    - What are the molecular weights of the compounds found?
+    
+    **Content Summary:** Summarize key findings and conclusions
+    - What are the key findings about the chemical structures?
+    
+    **Reaction Analysis:** Understand chemical reactions described
+    - What reactions are mentioned in the paper?
+    """)
+    
 
 # Extracted Structures section
 st.markdown("---")
@@ -564,7 +551,5 @@ if st.session_state.structures:
                     st.code(struct['smiles'])
                     st.text(f"Formula: {struct['formula']}")
                     st.text(f"MW: {struct['molecular_weight']:.2f}")
-                    if struct.get('context'):
-                        st.text(f"Context: {struct['context'][:100]}...")
 else:
     st.info("No structures extracted yet. Upload and process a paper to see results.")

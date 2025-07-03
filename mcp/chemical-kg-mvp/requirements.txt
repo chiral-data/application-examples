@@ -1,12 +1,10 @@
 # Core dependencies - Fixed for compatibility issues
 langchain==0.1.0
 langchain-community==0.0.20
-# Use older ChromaDB version that works with Pydantic v1
-chromadb==0.3.29
 # Fix for SQLite version compatibility with ChromaDB
 pysqlite3-binary
-# Pydantic v1 for LangChain compatibility
-pydantic>=1.10,<2.0
+# Use consistent pydantic version
+pydantic==1.10.13
 # Fix tokenizers build issue
 tokenizers==0.19.1
 sentence-transformers>=2.3.0
@@ -53,7 +51,6 @@ matplotlib
 
 # Utilities
 python-dotenv==1.0.0
-pydantic==2.5.3
 tqdm==4.66.1
 colorama==0.4.6
 opencv-python-headless==4.8.1.78
