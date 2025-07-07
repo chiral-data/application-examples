@@ -19,7 +19,7 @@ lightdock3.py setup.json 100 -c 1 -l 0
 
 cd swarm_0
 # Generate conformations
-lgd_generate_conformations.py ../4G6K_rec_model_0.pdb ../4G6K_lig_model_0.pdb gso_100.out 200
+lgd_generate_conformations.py ../4G6K_rec.pdb ../4G6K_lig.pdb gso_100.out 200
 
 # Clustering
 lgd_cluster_bsas.py gso_100.out
