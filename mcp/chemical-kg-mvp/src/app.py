@@ -179,7 +179,7 @@ if 'rag_chain' not in st.session_state:
 st.markdown("""
 <div style="background: linear-gradient(90deg, #0066cc 0%, #1e3a5f 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
     <h3 style="color: white; margin: 0; text-align: center;">
-        Chemistry Paper Analyzer
+        Chiral Decoder
     </h3>
 </div>
 """, unsafe_allow_html=True)

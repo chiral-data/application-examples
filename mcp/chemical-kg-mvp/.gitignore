@@ -161,3 +161,6 @@ ollama_models/
 .vscode/settings.json
 .vscode/launch.json
 .vscode/extensions.json
+
+# Claude documentation
+CLAUDE.md
