@@ -29,7 +29,7 @@ RUN mkdir -p ${BOLTZ_CACHE}
 RUN pip install --no-cache-dir --upgrade pip
 
 # Install Boltz in a fresh environment
-RUN pip install --no-cache-dir boltz
+RUN pip install --no-cache-dir boltz==1.0.0
 
 # Create a working directory
 WORKDIR /workspace
