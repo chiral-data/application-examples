@@ -1,0 +1,495 @@
+# Chemical Knowledge Graph MVP
+
+A proof-of-concept application for extracting and analyzing chemical structures from scientific papers using AI-powered tools with GPU acceleration and intelligent response formatting.
+
+## Overview
+
+This MVP demonstrates a chemical knowledge management system that:
+- Extracts text and chemical structure images from PDF documents
+- Converts chemical structure images to SMILES notation using GPU-accelerated DECIMER
+- Creates a searchable knowledge base with Ollama-powered vector embeddings
+- Provides an interactive chat interface for querying chemical information
+- Uses LLM-based response formatting for human-readable answers
+- Links chemical structures to their context within documents
+- Uses image-based processing approach to prevent hanging issues
+- Supports complex SMILES with stereochemistry and R-group placeholders
+- Preserves chemical properties like toxicity, IC50 values, and biological activities
+
+## Architecture
+
+```
+                                                          
+   PDF Upload        → PDF Processor    → Image Extractor 
+                                                          
+                                                      
+                                                      ↓
+                                                          
+  Chemical RAG   ←     Vector Store ←     DECIMER Client  
+                                                          
+                                                     
+         ↓                                            ↑
+                                                            
+ Streamlit Chat                             Chemical Handler
+                                                            
+```
+
+### Components
+
+1. **PDF Processor** (`pdf_processor.py`)
+   - Extracts text and images from PDF documents
+   - Maintains spatial relationships between text and images
+   - Uses PyMuPDF for efficient PDF parsing
+
+2. **DECIMER Client** (`decimer_client.py`)
+   - Interfaces with DECIMER AI for chemical structure recognition
+   - Converts chemical structure images to SMILES notation
+   - Handles API communication and error management
+
+3. **Chemical Handler** (`chemical_handler.py`)
+   - Processes SMILES notation using RDKit
+   - Calculates molecular properties (MW, formula)
+   - Associates structures with contextual text
+
+4. **Document Chunker** (`chunker.py`)
+   - Splits documents into manageable chunks
+   - Maintains chemical structure associations
+   - Optimizes for retrieval accuracy
+
+5. **Vector Store** (`vectorstore.py`)
+   - Creates embeddings using Ollama's nomic-embed-text model
+   - Combines SMILES notation with text for enhanced search
+   - Uses FAISS for persistent storage (Python 3.8 compatible)
+   - Stores chemical structures separately for efficient retrieval
+
+6. **RAG Chain** (`rag_chain.py`)
+   - Implements Retrieval-Augmented Generation
+   - Uses Ollama for local LLM inference
+   - Chemistry-specific prompt engineering
+
+7. **Response Formatter** (`llm_call.py`)
+   - LLM-powered response formatting for readability
+   - Preserves SMILES notation while removing technical clutter
+   - Highlights chemical properties and biological activities
+   - Configurable formatting templates (`format_prompt.txt`)
+
+8. **Streamlit App** (`app.py`)
+   - User-friendly web interface with chat functionality
+   - Real-time chemical structure extraction
+   - Interactive conversation history
+   - Clean UI with improved download button visibility
+
+## Quick Start
+
+### Prerequisites
+
+#### For GPU Processing (Recommended)
+- NVIDIA GPU (RTX 3060 Ti or higher)
+- NVIDIA Docker runtime support
+- NVIDIA Container Toolkit
+- 8GB+ GPU memory
+- 16GB+ system RAM
+
+#### For CPU-only Processing
+- Docker and Docker Compose
+- Python 3.8+ (for local development)
+- At least 8GB RAM
+
+### GPU Installation (Recommended)
+
+1. Install NVIDIA Container Toolkit:
+```bash
+# Add NVIDIA repository
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+# Install nvidia-container-toolkit
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+2. Run with GPU support:
+```bash
+docker run -d --name chem-kg-mvp-nvidia \
+  --runtime=nvidia \
+  --gpus all \
+  --shm-size=2g \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  -e NVIDIA_DRIVER_CAPABILITIES=all \
+  -p 8501:8501 \
+  chiral.sakuracr.jp/chem-kg-mvp:latest
+```
+
+3. Access the application at `http://localhost:8501`
+
+### CPU-only Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd chemical-kg-mvp
+```
+
+2. Start with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+3. Access the application at `http://localhost:8501`
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```env
+# Ollama Configuration
+OLLAMA_MODEL=llama3.2:latest
+EMBEDDING_MODEL=nomic-embed-text
+OLLAMA_HOST=ollama
+OLLAMA_PORT=11434
+
+# Application Settings
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+
+# Development Settings
+PYTHONUNBUFFERED=1
+PYTHONDONTWRITEBYTECODE=1
+```
+
+### Model Selection
+
+The application supports various Ollama models:
+- `llama3.2:latest` - Latest and most capable (default)
+- `mistral` - Fast and efficient
+- `llama2` - Good for scientific content
+- `nomic-embed-text` - Optimized embedding model
+
+## Development
+
+### Local Setup
+
+1. Create virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Run locally:
+```bash
+streamlit run src/app.py
+```
+
+### Project Structure
+
+```
+chemical-kg-mvp/
+├── src/                    # Source code
+│   ├── app.py             # Main Streamlit application with chat interface
+│   ├── pdf_processor.py   # PDF handling and image extraction
+│   ├── decimer_client.py  # DECIMER integration with R-group support
+│   ├── chemical_handler.py # Chemical data processing
+│   ├── chunker.py         # Document chunking
+│   ├── vectorstore.py     # FAISS vector database with Ollama embeddings
+│   ├── rag_chain.py       # RAG implementation
+│   ├── llm_call.py        # LLM-powered response formatting
+│   ├── format_prompt.txt  # Response formatting template
+│   └── init-ollama.sh     # Ollama initialization script
+├── test/                   # Test suite
+│   ├── unit/              # Unit tests (8 files)
+│   │   ├── test_chemical_handler.py
+│   │   ├── test_chunker.py
+│   │   ├── test_decimer_client.py
+│   │   ├── test_gpu_cpu_fallback.py
+│   │   ├── test_pdf_processor.py
+│   │   ├── test_rag_chain.py
+│   │   ├── test_structure_extraction.py
+│   │   ├── test_structure_segmentation.py
+│   │   └── test_vectorstore.py
+│   ├── integration/       # Integration tests (3 files)
+│   │   ├── test_end_to_end.py
+│   │   ├── test_real_pdf_processing.py
+│   │   └── test_updated_workflow.py
+│   ├── test_formatting.py # Response formatting tests
+│   └── run_tests.py       # Test runner
+├── data/                   # Sample data
+│   └── test.pdf           # Test document
+├── docker-compose.yml     # Docker orchestration with Ollama
+├── Dockerfile             # Container definition
+├── requirements.txt       # Python dependencies
+├── .env.example          # Environment configuration template
+└── README.md             # This documentation
+```
+
+## Usage Guide
+
+### Processing a Paper
+
+1. **Upload PDF**: Use the sidebar to upload a chemistry paper
+2. **Process**: Click "Process Paper" to extract structures
+3. **Review**: Check extracted structures in the right panel
+4. **Query**: Ask questions about the paper content
+
+### Example Queries
+
+- "What are the main chemical compounds discussed?"
+- "Describe the synthesis methods for compound X"
+- "What are the molecular weights of all compounds?"
+- "Explain the reaction mechanism described"
+- "Compare the structures found in this paper"
+
+### Tips for Best Results
+
+1. **PDF Quality**: Use high-resolution PDFs for better image extraction
+2. **Clear Images**: Ensure chemical structures are clearly visible
+3. **Specific Questions**: Ask targeted questions for better answers
+4. **Context**: Reference specific compounds or sections when asking
+
+## Technical Details
+
+### Chemical Structure Processing
+
+1. **PDF to Images**: Convert PDF to high-resolution images (300 DPI) to avoid hanging
+2. **Structure Segmentation**: DECIMER segments chemical structures from each page image
+3. **SMILES Generation**: GPU-accelerated DECIMER converts structures to SMILES notation
+4. **Validation**: RDKit validates SMILES with support for R-group placeholders ([R1], [R2], [R3])
+5. **Contextualization**: Associates structures with surrounding text context
+6. **Response Formatting**: LLM intelligently formats responses for readability while preserving chemical information
+
+### Vector Store Implementation
+
+The vector store combines chemical and textual information using a **text enhancement approach**:
+
+#### Text Enhancement Process
+1. **Base text**: Original chunk text from PDF
+2. **Chemical enhancement**: Append structured chemical information:
+   ```
+   Original text content...
+   
+   Chemical Structures Found:
+   - SMILES: CC(=O)Oc1ccccc1C(=O)O
+     Formula: C9H8O4
+     MW: 180.16
+   - SMILES: CC(C)Cc1ccc(cc1)[C@@H](C)C(=O)O
+     Formula: C13H18O2
+     MW: 206.28
+   ```
+
+#### Dual Storage Strategy
+- **Vector embeddings**: Enhanced text gets embedded for semantic search
+- **Metadata**: Structure count, SMILES list (first 3), chunk IDs stored as metadata
+- **Separate structure DB**: Full structure details stored in `structures_db` dictionary
+
+#### Benefits
+- **Semantic search** on both text content AND chemical information
+- **Structured queries** about molecular properties
+- **Direct SMILES lookup** when needed
+- **Context preservation** between text and chemical structures
+
+### GPU Memory Configuration
+
+TensorFlow is automatically configured for optimal GPU usage:
+```python
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+```
+
+### Response Formatting System
+
+The application uses a sophisticated LLM-based response formatting system:
+
+1. **Intelligent Cleanup**: Removes technical SMILES and molecular formula clutter from responses
+2. **Chemical Property Preservation**: Maintains important properties like IC50 values, toxicity data, biological activities
+3. **SMILES Preservation**: Keeps SMILES notation for chemical identification
+4. **Source Attribution**: Includes page numbers and document sections for reference
+5. **Configurable Templates**: Uses `format_prompt.txt` for customizable formatting instructions
+
+### Python 3.8 Compatibility
+
+- **FAISS Vector Store**: Uses FAISS instead of ChromaDB to avoid compatibility issues
+- **Ollama Embeddings**: Replaced HuggingFace dependencies with Ollama for embeddings
+- **Future Annotations**: Uses `from __future__ import annotations` for type hints
+- **Fallback Mechanisms**: Graceful degradation when dependencies are unavailable
+
+## Testing
+
+The project includes a comprehensive test suite covering unit and integration tests:
+
+### Test Structure
+```bash
+test/
+├── unit/                   # Unit tests (8 files)
+│   ├── test_chemical_handler.py
+│   ├── test_chunker.py
+│   ├── test_decimer_client.py
+│   ├── test_gpu_cpu_fallback.py
+│   ├── test_pdf_processor.py
+│   ├── test_rag_chain.py
+│   ├── test_structure_extraction.py
+│   ├── test_structure_segmentation.py
+│   └── test_vectorstore.py
+├── integration/            # Integration tests (3 files)
+│   ├── test_end_to_end.py
+│   ├── test_real_pdf_processing.py
+│   └── test_updated_workflow.py
+├── test_formatting.py      # Response formatting tests
+└── run_tests.py           # Test runner script
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+python test/run_tests.py
+
+# Run unit tests only
+pytest test/unit/ -v
+
+# Run integration tests only
+pytest test/integration/ -v
+
+# Test response formatting
+python test/test_formatting.py
+
+# Run tests in Docker container
+docker exec chem-kg-mvp python test/test_formatting.py
+```
+
+### Key Test Features
+- **GPU/CPU Compatibility**: Tests run on both GPU and CPU environments
+- **Response Formatting**: Validates LLM-based response cleaning and formatting
+- **SMILES Validation**: Tests R-group placeholder support
+- **Docker Integration**: All tests work inside containers
+- **Real PDF Processing**: Tests with actual scientific papers
+
+## Troubleshooting
+
+### GPU-Related Issues
+
+1. **CUDA_ERROR_NOT_INITIALIZED**
+   - Ensure container has GPU access: `docker run --gpus all`
+   - Check NVIDIA runtime: `docker info | grep nvidia`
+   - Verify GPU drivers are installed: `nvidia-smi`
+
+2. **Container Not Using GPU**
+   - Install NVIDIA Container Toolkit
+   - Use `--runtime=nvidia` flag
+   - Increase shared memory: `--shm-size=2g`
+
+3. **Processing Hangs**
+   - The image-based approach should prevent this
+   - Check available system memory
+   - Monitor GPU usage: `watch -n 1 nvidia-smi`
+
+### Vector Store Issues
+
+4. **'type' object is not subscriptable**
+   - This error is fixed by using FAISS instead of ChromaDB
+   - Update to latest vectorstore.py implementation
+   - Python 3.8 compatibility is maintained
+
+5. **SMILES Validation Errors**
+   - All DECIMER-generated SMILES are trusted
+   - Complex SMILES with @ symbols are valid stereochemistry
+   - RDKit validation is used when available but not required
+
+### General Issues
+
+6. **Ollama Connection Failed**
+   - Ensure Ollama service is running: `docker ps`
+   - Check logs: `docker logs ollama-service`
+   - Verify port 11434 is accessible
+
+7. **Memory Issues**
+   - Increase Docker memory allocation
+   - Use smaller embedding models
+   - Process smaller PDFs first
+
+8. **PDF Processing Fails**
+   - Ensure PDF is not encrypted
+   - Check for valid chemical images
+   - Use high-quality scans (300+ DPI)
+
+### Testing Commands
+
+```bash
+# Test GPU access
+docker exec chem-kg-mvp-nvidia nvidia-smi
+
+# Test TensorFlow GPU
+docker exec chem-kg-mvp-nvidia python -c "
+import tensorflow as tf
+print('GPU available:', tf.config.list_physical_devices('GPU'))
+"
+
+# Test DECIMER functionality
+docker exec chem-kg-mvp-nvidia python -c "
+import sys; sys.path.insert(0, 'src')
+from decimer_client import DECIMERClient
+client = DECIMERClient()
+print('DECIMER available:', client.decimer_available)
+"
+
+# Test vector store
+docker exec chem-kg-mvp-nvidia python test_vectorstore.py
+```
+
+## Performance Optimization
+
+### For Faster Processing
+- Use higher-end GPUs (RTX 3080+ recommended)
+- Increase Docker shared memory: `--shm-size=4g`
+- Process PDFs with fewer pages in parallel
+
+### For Better Accuracy
+- Use high-quality PDF scans (300+ DPI)
+- Ensure chemical structures are clearly visible
+- Avoid PDFs with watermarks over structures
+
+## Future Enhancements
+
+- [ ] Support for multiple file formats (DOCX, HTML)
+- [ ] Local DECIMER deployment option
+- [ ] Advanced structure search (substructure, similarity)
+- [ ] Integration with chemical databases (PubChem, ChEMBL)
+- [ ] Batch processing capabilities
+- [ ] Export functionality for knowledge graphs
+- [ ] Multi-language support
+- [ ] Real-time collaboration features
+- [ ] Distributed processing for large document collections
+- [ ] Advanced chemical property prediction
+
+## License
+
+This project is released under the MIT License. See LICENSE file for details.
+
+## Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request with clear descriptions
+
+## Contact
+
+For questions or support, please open an issue on GitHub.
+
+---
+
+**Note**: This is an MVP implementation. For production use, consider:
+- Implementing proper authentication
+- Adding comprehensive error handling
+- Scaling vector storage solutions
+- Implementing caching strategies
+- Adding monitoring and logging
