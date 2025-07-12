@@ -172,6 +172,10 @@ if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'rag_chain' not in st.session_state:
     st.session_state.rag_chain = None
+if 'documents' not in st.session_state:
+    st.session_state.documents = []
+if 'all_chunks' not in st.session_state:
+    st.session_state.all_chunks = []
 
 
 # Chemical Knowledge Graph - MVP
@@ -215,6 +219,7 @@ def create_csv_download(structures):
         
         data.append({
             'Structure_ID': f'Structure_{i+1}',
+            'Document': struct.get('document', 'Unknown'),
             'SMILES': struct.get('smiles', ''),
             'Molecular_Formula': struct.get('formula', ''),
             'Molecular_Weight': struct.get('molecular_weight', ''),
@@ -233,20 +238,49 @@ def get_image_download_link(image_path, filename):
 
 # Sidebar for file upload
 with st.sidebar:
-    st.markdown("### Upload Document")
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", help="Upload a chemistry paper to analyze")
+    st.markdown("### Upload Documents")
+    uploaded_files = st.file_uploader(
+        "Choose PDF files", 
+        type="pdf", 
+        accept_multiple_files=True,
+        help="Upload one or more chemistry papers to analyze"
+    )
     
-    if uploaded_file is not None:
-        # Save uploaded file
-        with open("temp_paper.pdf", "wb") as f:
-            f.write(uploaded_file.getvalue())
+    # Show currently loaded documents
+    if st.session_state.documents:
+        st.markdown("### Loaded Documents")
+        for i, doc in enumerate(st.session_state.documents):
+            st.markdown(f"📄 **{doc['filename']}**")
+            st.markdown(f"   - {len(doc['structures'])} structures")
+            st.markdown(f"   - {len(doc['chunks'])} chunks")
+        
+        if st.button("🗑️ Clear All Documents", help="Remove all loaded documents"):
+            st.session_state.documents = []
+            st.session_state.structures = []
+            st.session_state.all_chunks = []
+            st.session_state.vectorstore = None
+            st.session_state.rag_chain = None
+            st.session_state.chat_history = []
+            st.rerun()
+    
+    if uploaded_files:
+        # Check if we have new files to process
+        current_filenames = {doc['filename'] for doc in st.session_state.documents}
+        new_files = [f for f in uploaded_files if f.name not in current_filenames]
+        
+        if new_files:
+            st.markdown(f"### Processing {len(new_files)} new file(s)")
+            for new_file in new_files:
+                st.markdown(f"📄 {new_file.name}")
+        elif uploaded_files:
+            st.info(f"All {len(uploaded_files)} files already processed.")
         
         # Processing options
         st.markdown("### Processing Options")
         use_decimer_segmentation = st.checkbox("Use DECIMER Segmentation", value=True, help="Use AI-powered structure detection")
         extract_images = st.checkbox("Extract Structure Images", value=True, help="Save structure images for download")
         
-        if st.button("Process Paper", help="Start processing the uploaded paper"):
+        if new_files and st.button("Process New Papers", help="Start processing the new uploaded papers"):
             error_occurred = False
             processing_status = st.empty()
             
@@ -263,37 +297,48 @@ with st.sidebar:
                     log_display.text(display_text)
             
             try:
-                with st.spinner("Processing paper..."):
+                with st.spinner(f"Processing {len(new_files)} paper(s)..."):
                     processing_status.info("Initializing components...")
                     update_progress("Starting PDF processing...")
                     
-                    # Initialize components with error handling
+                    # Initialize shared components once
                     try:
-                        pdf_processor = PDFProcessor("temp_paper.pdf")
-                        processing_status.info("PDF processor initialized")
-                        update_progress("PDF processor ready")
+                        decimer_client = DECIMERClient()
+                        chem_handler = ChemicalHandler(decimer_client)
+                        chunker = ChemicalAwareChunker()
+                        processing_status.info("DECIMER components initialized")
+                        update_progress("DECIMER components ready")
+                        update_progress(f"GPU available: {decimer_client.decimer_available}")
                     except Exception as e:
-                        st.error(f"Failed to initialize PDF processor: {e}")
-                        st.info("Try uploading a different PDF file.")
+                        st.warning(f"DECIMER initialization failed: {e}")
+                        st.info("Try uploading a different PDF file or check the logs for more details.")
                         error_occurred = True
                     
-                    if not error_occurred:
+                    # Process each new file
+                    for file_idx, uploaded_file in enumerate(new_files):
+                        if error_occurred:
+                            break
+                            
+                        processing_status.info(f"Processing file {file_idx + 1}/{len(new_files)}: {uploaded_file.name}")
+                        update_progress(f"\n--- Processing {uploaded_file.name} ---")
+                        
+                        # Save current file
+                        temp_filename = f"temp_paper_{file_idx}.pdf"
+                        with open(temp_filename, "wb") as f:
+                            f.write(uploaded_file.getvalue())
+                        
                         try:
-                            decimer_client = DECIMERClient()
-                            chem_handler = ChemicalHandler(decimer_client)
-                            chunker = ChemicalAwareChunker()
-                            processing_status.info("DECIMER components initialized")
-                            update_progress("DECIMER components ready")
-                            update_progress(f"GPU available: {decimer_client.decimer_available}")
+                            pdf_processor = PDFProcessor(temp_filename)
+                            processing_status.info(f"PDF processor initialized for {uploaded_file.name}")
+                            update_progress(f"PDF processor ready for {uploaded_file.name}")
                         except Exception as e:
-                            st.warning(f"DECIMER initialization failed: {e}")
-                            st.info("Try uploading a different PDF file or check the logs for more details.")
-                            error_occurred = True
+                            st.error(f"Failed to initialize PDF processor for {uploaded_file.name}: {e}")
+                            st.info("Try uploading a different PDF file.")
+                            continue
                     
-                    if not error_occurred:
-                        # Extract content
-                        processing_status.info("Extracting text and images...")
-                        update_progress("Extracting content from PDF...")
+                        # Extract content from current file
+                        processing_status.info(f"Extracting text and images from {uploaded_file.name}...")
+                        update_progress(f"Extracting content from {uploaded_file.name}...")
                         try:
                             pages_data = pdf_processor.extract_text_and_images()
                             
@@ -302,18 +347,17 @@ with st.sidebar:
                             for page_data in pages_data:
                                 full_text += page_data['text'] + "\n"
                             
-                            processing_status.info(f"Extracted {len(full_text)} characters of text")
+                            processing_status.info(f"Extracted {len(full_text)} characters from {uploaded_file.name}")
                             update_progress(f"Extracted {len(pages_data)} pages, {len(full_text):,} characters")
                             
                         except Exception as e:
-                            st.error(f"Failed to extract content from PDF: {e}")
+                            st.error(f"Failed to extract content from {uploaded_file.name}: {e}")
                             st.info("The PDF might be corrupted or password-protected.")
-                            error_occurred = True
+                            continue
                     
-                    if not error_occurred:
-                        # Process chemical structures
-                        processing_status.info("Identifying chemical structures...")
-                        all_structures = []
+                        # Process chemical structures from current file
+                        processing_status.info(f"Identifying chemical structures in {uploaded_file.name}...")
+                        file_structures = []
                         
                         try:
                             if use_decimer_segmentation:
@@ -328,19 +372,22 @@ with st.sidebar:
                                         try:
                                             # Update progress every few structures
                                             if i % 3 == 0:
-                                                update_progress(f"Processing structure {i+1}/{len(chemical_images)}...")
+                                                update_progress(f"Processing structure {i+1}/{len(chemical_images)} from {uploaded_file.name}...")
                                             
                                             structure = chem_handler.process_image(
                                                 img_info['path'],
-                                                f"Structure from page {img_info.get('page', 'unknown')}"
+                                                f"Structure from {uploaded_file.name} page {img_info.get('page', 'unknown')}"
                                             )
                                             
                                             if structure:
-                                                all_structures.append(structure)
+                                                # Add document metadata to structure
+                                                structure['document'] = uploaded_file.name
+                                                structure['document_index'] = len(st.session_state.documents)
+                                                file_structures.append(structure)
                                                 if structure.get('smiles') and (i % 3 == 0 or i == len(chemical_images)-1):
                                                     update_progress(f"Generated SMILES for structure {i+1}")
                                         except Exception as e:
-                                            st.warning(f"Failed to process structure {img_info['index'] + 1}: {e}")
+                                            st.warning(f"Failed to process structure {img_info['index'] + 1} from {uploaded_file.name}: {e}")
                                             continue
                                             
                                 except Exception as e:
@@ -361,42 +408,72 @@ with st.sidebar:
                                             
                                             structure = chem_handler.process_image(
                                                 img_info['path'],
-                                                context
+                                                f"{context} (from {uploaded_file.name})"
                                             )
                                             
                                             if structure:
-                                                all_structures.append(structure)
+                                                # Add document metadata to structure
+                                                structure['document'] = uploaded_file.name
+                                                structure['document_index'] = len(st.session_state.documents)
+                                                file_structures.append(structure)
                                         except Exception as e:
-                                            st.warning(f"Failed to process image: {e}")
+                                            st.warning(f"Failed to process image from {uploaded_file.name}: {e}")
                                             continue
                             
-                            st.session_state.structures = all_structures
-                            processing_status.info(f"Found {len(all_structures)} chemical structures")
-                            update_progress(f"Processing complete! Found {len(all_structures)} structures")
+                            processing_status.info(f"Found {len(file_structures)} chemical structures in {uploaded_file.name}")
+                            update_progress(f"Found {len(file_structures)} structures in {uploaded_file.name}")
                             
                         except Exception as e:
-                            st.error(f"Structure processing failed: {e}")
-                            st.info("Try uploading a different PDF file or check GPU acceleration.")
-                            error_occurred = True
+                            st.error(f"Structure processing failed for {uploaded_file.name}: {e}")
+                            st.info("Skipping this file and continuing with others.")
+                            continue
                     
-                    if not error_occurred:
-                        # Create chunks
-                        processing_status.info("Creating document chunks...")
+                        # Create chunks for current file
+                        processing_status.info(f"Creating document chunks for {uploaded_file.name}...")
                         try:
-                            chunks = chunker.chunk_with_structures(full_text, all_structures)
-                            processing_status.info(f"Created {len(chunks)} document chunks")
+                            file_chunks = chunker.chunk_with_structures(full_text, file_structures)
+                            # Add document metadata to chunks
+                            for chunk in file_chunks:
+                                chunk['document'] = uploaded_file.name
+                                chunk['document_index'] = len(st.session_state.documents)
+                            
+                            processing_status.info(f"Created {len(file_chunks)} chunks for {uploaded_file.name}")
+                            update_progress(f"Created {len(file_chunks)} chunks for {uploaded_file.name}")
                         except Exception as e:
-                            st.error(f"Failed to create document chunks: {e}")
-                            error_occurred = True
+                            st.error(f"Failed to create document chunks for {uploaded_file.name}: {e}")
+                            continue
                     
-                    if not error_occurred:
-                        # Create vector store
+                        # Store document information
+                        document_info = {
+                            'filename': uploaded_file.name,
+                            'structures': file_structures,
+                            'chunks': file_chunks,
+                            'text_length': len(full_text),
+                            'pages': len(pages_data)
+                        }
+                        st.session_state.documents.append(document_info)
+                        
+                        # Add to global structures and chunks
+                        st.session_state.structures.extend(file_structures)
+                        st.session_state.all_chunks.extend(file_chunks)
+                        
+                        # Clean up temporary file
+                        try:
+                            os.remove(temp_filename)
+                        except:
+                            pass
+                    
+                    # Rebuild vector store with all chunks from all documents
+                    if st.session_state.all_chunks and not error_occurred:
                         processing_status.info("Building vector database...")
+                        update_progress(f"Building vector database with {len(st.session_state.all_chunks)} total chunks...")
                         try:
                             vector_store = ChemicalVectorStore()
-                            vector_store.create_vectorstore(chunks)
+                            vector_store.create_vectorstore(st.session_state.all_chunks)
                             st.session_state.vectorstore = vector_store
+                            st.session_state.rag_chain = None  # Reset RAG chain to reinitialize with new vectorstore
                             processing_status.info("Vector database created")
+                            update_progress("Vector database complete!")
                         except Exception as e:
                             st.error(f"Failed to create vector database: {e}")
                             st.info("This might be an embedding model issue. Check the logs for more details.")
@@ -410,11 +487,14 @@ with st.sidebar:
             finally:
                 processing_status.empty()
                 
-                if not error_occurred:
-                    st.success("Paper processed successfully!")
+                if not error_occurred and st.session_state.documents:
+                    st.success(f"Successfully processed {len(new_files)} new paper(s)!")
                     
                     # Display processing results
-                    st.metric("Total Structures Found", len(all_structures))
+                    total_structures = len(st.session_state.structures)
+                    total_documents = len(st.session_state.documents)
+                    st.metric("Total Documents", total_documents)
+                    st.metric("Total Structures Found", total_structures)
     
     # Real-time progress logging provides visibility into processing steps
 
@@ -535,14 +615,18 @@ if st.session_state.structures:
         cols = st.columns(cols_per_row)
         for j, struct in enumerate(st.session_state.structures[i:i+cols_per_row]):
             with cols[j]:
-                with st.expander(f"Structure {i+j+1}"):
+                document_name = struct.get('document', 'Unknown')
+                with st.expander(f"Structure {i+j+1} - {document_name}"):
+                    # Document source
+                    st.markdown(f"**Source:** {document_name}")
+                    
                     # Structure image
                     if os.path.exists(struct.get('image_path', '')):
                         st.image(struct['image_path'], width=200)
                         # Download link for individual image
                         img_download = get_image_download_link(
                             struct['image_path'], 
-                            f"structure_{i+j+1}.png"
+                            f"structure_{i+j+1}_{document_name.replace('.pdf', '')}.png"
                         )
                         if img_download:
                             st.markdown(img_download, unsafe_allow_html=True)
