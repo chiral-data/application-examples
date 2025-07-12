@@ -1,1 +1,0 @@
-# Chemical Knowledge Graph MVP Test Suite
