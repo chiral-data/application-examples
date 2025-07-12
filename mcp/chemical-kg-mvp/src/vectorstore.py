@@ -45,7 +45,9 @@ class ChemicalVectorStore:
                 'chunk_id': chunk['chunk_id'],
                 'page': chunk.get('page', -1),
                 'has_structures': len(chunk.get('structures', [])) > 0,
-                'structure_count': len(chunk.get('structures', []))
+                'structure_count': len(chunk.get('structures', [])),
+                'document': chunk.get('document', 'Unknown'),
+                'document_index': chunk.get('document_index', -1)
             }
             
             # Store structure details separately

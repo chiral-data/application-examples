@@ -44,8 +44,9 @@ class ChemicalRAG:
         1. Base your answer ONLY on the provided context
         2. If chemical structures are mentioned, describe their key features
         3. Include SMILES notations when available
-        4. If you cannot answer based on the context, say so clearly
-        5. Be concise but thorough
+        4. When referencing information, mention which document it comes from if available
+        5. If you cannot answer based on the context, say so clearly
+        6. Be concise but thorough
         
         Answer:"""
         
@@ -69,12 +70,35 @@ class ChemicalRAG:
         )
     
     def query(self, question, return_sources=True):
-        """Process user query with source documents"""
+        """Process user query with source documents and document references"""
         result = self.qa_chain({"query": question})
         
         if return_sources:
+            # Enhanced source information with document names
+            sources = []
+            for doc in result.get("source_documents", []):
+                source_info = {
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "document": doc.metadata.get("document", "Unknown"),
+                    "page": doc.metadata.get("page", -1),
+                    "has_structures": doc.metadata.get("has_structures", False)
+                }
+                sources.append(source_info)
+            
             return {
                 "answer": result["result"],
-                "sources": result.get("source_documents", [])
+                "sources": sources
             }
         return result["result"]
+    
+    def _format_context_with_sources(self, docs):
+        """Format retrieved documents with source attribution"""
+        formatted_context = []
+        for i, doc in enumerate(docs):
+            document_name = doc.metadata.get("document", "Unknown Document")
+            page = doc.metadata.get("page", "unknown")
+            context_piece = f"[Source: {document_name}, Page: {page}]\n{doc.page_content}"
+            formatted_context.append(context_piece)
+        
+        return "\n\n".join(formatted_context)
