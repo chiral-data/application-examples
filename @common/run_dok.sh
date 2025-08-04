@@ -5,7 +5,8 @@
 echo "--- Individual Arguments ---"
 echo "Running script: $0 ..." 
 echo "Job script to be downloaded: $1"
-filename=$(basename "$1")
+# Extract filename without query parameters
+filename=$(basename "$1" | cut -d'?' -f1)
 echo "Script to run: $filename"
 echo ""
 
@@ -23,7 +24,7 @@ fi
 echo ""
 
 echo "Downloading the job script ..."
-wget $1
+wget -O "$filename" "$1"
 echo ""
 
 echo "Running the job script ..."
