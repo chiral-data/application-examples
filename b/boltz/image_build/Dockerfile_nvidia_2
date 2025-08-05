@@ -62,8 +62,7 @@ RUN cd ${BOLTZ_CACHE} && \
     wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/boltz2_conf.ckpt && \
     wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/boltz2_aff.ckpt && \
     wget -q https://huggingface.co/boltz-community/boltz-2/resolve/main/mols.tar && \
-    tar -xf mols.tar && \
-    rm -f mols.tar
+    tar -xf mols.tar
 
 # Create a working directory
 WORKDIR /workspace
