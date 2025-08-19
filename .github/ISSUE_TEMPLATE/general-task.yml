@@ -1,0 +1,30 @@
+name: General Development Task Creation
+description: no desp
+title: "[2508 MVP - Design] "
+projects: ["chiral-data/5"]
+body:
+  - type: textarea
+    attributes:
+      label: Parent Issue
+      description: no desp
+      value: |
+        https://github.com/chiral-data/chiral-service-epics/issues/14
+  - type: input
+    id: start_date
+    attributes:
+      label: Start Date
+      placeholder: "YYYY-MM-DD"
+  - type: input
+    id: end_date
+    attributes:
+      label: Target End Date
+      placeholder: "YYYY-MM-DD"
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Not Started
+        - In Progress
+        - Review
+        - Completed
